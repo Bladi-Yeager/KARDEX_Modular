@@ -38,9 +38,10 @@ La primera vez tarda un poco (descarga MySQL y phpMyAdmin). Después es rápido.
 | API (raíz) | http://localhost:8001/ | Comprobación rápida |
 | phpMyAdmin | http://localhost:8080 | Ver y editar tablas |
 
-Datos para phpMyAdmin: **Servidor** `db`, **Usuario** `root`, **Contraseña** la que pusiste.
+Datos para phpMyAdmin: **Servidor** `db`, **Usuario** `grupo3`, **Contraseña** `ciego123`
+(también funciona con el usuario `root`).
 
-Usuario de prueba de la API: `admin` / `admin123`.
+Usuario de la API: `grupo3` / `ciego123`.
 
 ---
 

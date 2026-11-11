@@ -6,6 +6,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: tu_password_root
       MYSQL_DATABASE: db_kardex
+      MYSQL_USER: grupo3
+      MYSQL_PASSWORD: ciego123
     ports:
       - "33061:3306"
     volumes:
@@ -36,7 +38,7 @@ services:
     ports:
       - "8001:8000"
     environment:
-      - DATABASE_URL=mysql+pymysql://root:tu_password_root@db:3306/db_kardex
+      - DATABASE_URL=mysql+pymysql://grupo3:ciego123@db:3306/db_kardex
     depends_on:
       - db
     networks:
