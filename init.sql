@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS lotes (
 );
 
 -- KARDEX
+CREATE TABLE IF NOT EXISTS cosechas (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     fecha         DATE NOT NULL,
     cosechero_id  INT NOT NULL,
