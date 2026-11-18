@@ -41,7 +41,9 @@ La primera vez tarda un poco (descarga MySQL y phpMyAdmin). Después es rápido.
 
 | Servicio | Dirección | Notas |
 |---|---|---|
-| **Portal del productor** | http://localhost:8001 | Registro libre y consulta del Kardex |
+| **Centro de accesos** | http://localhost:8001/ | Tres tarjetas: administrador, productor y base de datos |
+| **Panel del administrador** | http://localhost:8001/admin | Admin, encargado y trabajador (modo oscuro y claro) |
+| **Portal del productor** | http://localhost:8001/portal | Registro libre y consulta del Kardex |
 | API + documentación (Swagger) | http://localhost:8001/docs | Probar endpoints con token |
 | Comprobación de la API | http://localhost:8001/health | Respuesta rápida |
 | phpMyAdmin | http://localhost:8080 | Ver y editar tablas |
@@ -69,6 +71,29 @@ Reglas de seguridad implementadas:
   siguen entrando y su hash se actualiza solo al iniciar sesión.
 - La sesión usa **token JWT**; los endpoints están protegidos por rol.
 - Las claves van en `.env`, nunca en GitHub.
+
+---
+
+## Panel del administrador (`/admin`)
+
+Es el panel completo para **administrador, encargado y trabajador**, con la misma
+base visual del repositorio original pero adaptado a este backend y con **dos temas**:
+
+- Botón de sol/luna arriba a la derecha: **modo oscuro** y **modo claro**.
+- Paleta multicolor (índigo, azul, violeta, magenta, ámbar y rosa), **sin verde**.
+- El tema elegido se recuerda en el navegador.
+
+Secciones según el perfil:
+
+| Perfil | Secciones |
+|---|---|
+| **admin** | Resumen, Productos y lotes, Movimientos Kardex, Cosechas, Cosecheros, Fincas y parcelas, Clientes y fincas, Invitaciones |
+| **encargado** | Resumen, Productos y lotes, Movimientos Kardex, Cosechas, Cosecheros, Fincas y parcelas |
+| **trabajador** | Mi espacio, Registrar cosecha, Consultar lotes |
+
+Desde **Clientes y fincas** el administrador asigna o quita fincas a cada productor.
+Desde **Invitaciones** genera los códigos de un solo uso para encargados y trabajadores.
+El panel usa el **token JWT** y respeta los permisos del backend.
 
 ---
 

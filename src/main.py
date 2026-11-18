@@ -38,6 +38,7 @@ app.include_router(portal_router)
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 app.mount("/portal/static", StaticFiles(directory=STATIC_DIR / "portal"), name="portal-static")
 app.mount("/inicio/static", StaticFiles(directory=STATIC_DIR / "inicio"), name="inicio-static")
+app.mount("/admin/static", StaticFiles(directory=STATIC_DIR / "admin"), name="admin-static")
 
 
 @app.get("/", include_in_schema=False)
@@ -60,6 +61,12 @@ def portal_inicio():
 @app.get("/portal/panel", include_in_schema=False)
 def portal_panel():
     return FileResponse(STATIC_DIR / "portal" / "panel.html")
+
+
+@app.get("/admin", include_in_schema=False)
+def admin_panel():
+    """Panel completo de administracion, encargados y trabajadores."""
+    return FileResponse(STATIC_DIR / "admin" / "index.html")
 
 
 @app.get("/health", tags=["sistema"])
