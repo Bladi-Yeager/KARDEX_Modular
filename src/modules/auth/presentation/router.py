@@ -11,6 +11,7 @@ from src.modules.auth.application.dtos import (
     StaffRegister,
     UsuarioLogin,
     UsuarioOut,
+    UsuarioCreateAdmin,
 )
 from src.modules.auth.application.services import AuthService, InvitacionService
 from src.modules.auth.domain.exceptions import (
@@ -100,6 +101,21 @@ def listar_usuarios(
     _admin=Depends(require_roles("admin")),
 ):
     return service.list_all()
+
+
+@router.post("/usuarios", response_model=UsuarioOut, status_code=201)
+def crear_usuario(
+    data: UsuarioCreateAdmin,
+    service: AuthService = Depends(get_auth_service),
+    _admin=Depends(require_roles("admin")),
+):
+    """El administrador crea cuentas de cliente, encargado o trabajador."""
+    try:
+        return service.crear_usuario(data)
+    except RolInvalido as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except UsuarioYaExiste as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/invitaciones", response_model=InvitacionOut)

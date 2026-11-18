@@ -38,6 +38,7 @@ const NAV = {
     ["workers", "♙", "Cosecheros"],
     ["farms", "⌂", "Fincas y parcelas"],
     ["clients", "◈", "Clientes y fincas"],
+    ["users", "◍", "Cuentas y usuarios"],
     ["invites", "✉", "Invitaciones"]
   ],
   encargado: [
@@ -58,7 +59,7 @@ const NAV = {
 const PAGE_NAMES = {
   dashboard: "Resumen", lots: "Productos y lotes", movements: "Movimientos Kardex",
   harvests: "Cosechas", workers: "Cosecheros", farms: "Fincas y parcelas",
-  clients: "Clientes y fincas", invites: "Invitaciones"
+  clients: "Clientes y fincas", invites: "Invitaciones", users: "Cuentas y usuarios"
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -134,9 +135,17 @@ function showApp() {
   $("#today-label").textContent = new Intl.DateTimeFormat("es-BO", { dateStyle: "full" }).format(new Date());
 
   renderNav();
+  const destino = pageFromHash();
   loadData()
-    .then(() => navigate("dashboard"))
-    .catch((e) => { toast(e.message, true); navigate("dashboard"); });
+    .then(() => navigate(destino))
+    .catch((e) => { toast(e.message, true); navigate(destino); });
+}
+
+/* Permite abrir una vista directamente, por ejemplo /admin#cosechas */
+function pageFromHash() {
+  const pedida = (window.location.hash || "").replace("#", "");
+  const permitidas = (NAV[session.rol] || []).map(([id]) => id);
+  return permitidas.includes(pedida) ? pedida : "dashboard";
 }
 
 function logout(silencioso = false) {
@@ -160,6 +169,7 @@ function renderNav() {
 function navigate(page) {
   if (!NAV[session.rol] || !NAV[session.rol].some(([id]) => id === page)) page = "dashboard";
   currentPage = page;
+  if (window.location.hash !== "#" + page) history.replaceState(null, "", "#" + page);
   renderNav();
   $("#page-crumb").textContent = PAGE_NAMES[page] || "Resumen";
   $("#sidebar").classList.remove("open");
@@ -167,7 +177,7 @@ function navigate(page) {
   const vistas = {
     dashboard: dashboardView, lots: lotsView, movements: movementsView,
     harvests: harvestsView, workers: workersView, farms: farmsView,
-    clients: clientsView, invites: invitesView
+    clients: clientsView, invites: invitesView, users: usersView
   };
   $("#page-content").innerHTML = (vistas[page] || dashboardView)();
   bindPage();
@@ -415,27 +425,82 @@ function farmsView() {
 
 function clientsView() {
   if (session.rol !== "admin") return dashboardView();
+
   const filas = cache.clientes.map((c) => {
     const chips = (c.fincas || []).map((f) =>
       `<span class="pill violet" style="margin:2px 3px 2px 0">${safe(f.nombre || "Finca " + f.numero)} <button class="copy-btn" style="padding:1px 6px;margin-left:6px" data-unassign="${f.id}" title="Quitar esta finca">×</button></span>`
     ).join("") || '<span class="pill gray">Sin fincas</span>';
     return `<tr><td><b>${safe(c.nombre_completo)}</b></td><td>${safe(c.username)}</td><td><span class="pill ${c.activo ? "violet" : "gray"}">${c.activo ? "Activo" : "Inactivo"}</span></td><td style="white-space:normal">${chips}</td></tr>`;
   });
-  return `${pageHead("PRODUCTORES", "Clientes y fincas", "Asigna a cada productor las fincas que podrá ver en su portal.")}
+
+  const opcionesProductor = cache.clientes.length
+    ? cache.clientes.map((c) => `<option value="${c.id}">${safe(c.nombre_completo)} (${safe(c.username)})</option>`).join("")
+    : '<option value="">No hay productores todavía</option>';
+
+  const opcionesFinca = cache.fincas.length
+    ? cache.fincas.map((f) => {
+        const dueno = cache.clientes.find((c) => c.id === f.usuario_id);
+        const estado = dueno ? `asignada a ${dueno.nombre_completo}` : "sin asignar";
+        return `<option value="${f.id}">${safe(f.nombre || "Finca " + f.numero)} (#${f.id}) · ${safe(estado)}</option>`;
+      }).join("")
+    : '<option value="">No hay fincas todavía</option>';
+
+  const faltantes = [];
+  if (!cache.clientes.length) faltantes.push("todavía no hay productores registrados");
+  if (!cache.fincas.length) faltantes.push("todavía no hay fincas creadas");
+
+  return `${pageHead("PRODUCTORES", "Clientes y fincas", "Asigna a cada productor las fincas que podrá ver en su portal.",
+      '<button class="btn btn-soft" data-go="users" type="button">＋ Crear cuenta</button>')}
     <div class="panel">
-      <div class="panel-head"><div><h3>Asignar finca a un productor</h3><p>El productor solo verá las fincas que le asignes aquí.</p></div></div>
+      <div class="panel-head"><div><h3>Asignar finca a un productor</h3><p>Elige el productor y la finca. El productor solo verá las fincas que le asignes aquí.</p></div></div>
+      ${faltantes.length ? `<div class="notice-inline">Para asignar necesitas que existan ${safe(faltantes.join(" y "))}. Usa los botones de abajo para crearlos.</div>` : ""}
       <form id="assign-farm-form">
         <div class="form-grid">
-          <label class="field">Productor<select name="usuario_id" required><option value="">Seleccionar productor</option>${cache.clientes.map((c) => `<option value="${c.id}">${safe(c.nombre_completo)} (${safe(c.username)})</option>`).join("")}</select></label>
-          <label class="field">Finca<select name="finca_id" required><option value="">Seleccionar finca</option>${cache.fincas.map((f) => `<option value="${f.id}">${safe(f.nombre || "Finca " + f.numero)} (#${f.id})</option>`).join("")}</select></label>
+          <label class="field">Productor<select name="usuario_id" required>${opcionesProductor}</select></label>
+          <label class="field">Finca<select name="finca_id" required>${opcionesFinca}</select></label>
         </div>
-        <div class="notice-inline">Los productores se registran solos en el <a href="/portal" target="_blank" rel="noopener">portal del productor</a>. Aquí solo se les asignan sus fincas.</div>
-        <div class="form-actions"><button class="btn btn-primary" type="submit">Asignar finca</button></div>
+        <div class="notice-inline">Los productores pueden registrarse solos en el <a href="/portal" target="_blank" rel="noopener">portal del productor</a>, o los puedes crear tú en <b>Cuentas y usuarios</b>.</div>
+        <div class="form-actions">
+          <button class="btn btn-soft" data-go="users" type="button">Crear cuenta</button>
+          <button class="btn btn-soft" data-go="farms" type="button">Crear finca</button>
+          <button class="btn btn-primary" type="submit">Asignar finca</button>
+        </div>
       </form>
     </div>
     <div class="panel">
       <div class="panel-head"><div><h3>Productores registrados</h3><p>Cada productor con sus fincas asignadas.</p></div><span class="pill violet">${cache.clientes.length} productores</span></div>
-      ${table(["NOMBRE", "USUARIO", "ESTADO", "FINCAS ASIGNADAS"], filas, "Todavía no hay productores registrados.")}
+      ${table(["NOMBRE", "USUARIO", "ESTADO", "FINCAS ASIGNADAS"], filas, "Todavía no hay productores registrados. Crea uno en «Cuentas y usuarios».")}
+    </div>`;
+}
+
+function usersView() {
+  if (session.rol !== "admin") return dashboardView();
+
+  const filas = cache.usuarios.map((u) =>
+    `<tr><td><b>${safe(u.nombre_completo)}</b></td><td>${safe(u.username)}</td><td><span class="pill ${u.rol === "admin" ? "rose" : (u.rol === "cliente" ? "violet" : "orange")}">${safe(ROLE_LABEL[u.rol] || u.rol)}</span></td><td><span class="pill ${u.activo ? "violet" : "gray"}">${u.activo ? "Activo" : "Inactivo"}</span></td></tr>`
+  );
+
+  return `${pageHead("USUARIOS", "Cuentas y usuarios", "Crea cuentas de productor, encargado o trabajador sin usar códigos.")}
+    <div class="panel">
+      <div class="panel-head"><div><h3>Registrar una cuenta nueva</h3><p>Elige el rol. El administrador principal no se puede crear desde aquí.</p></div></div>
+      <form id="create-user-form">
+        <div class="form-grid">
+          <label class="field">Nombre completo<input name="nombre_completo" placeholder="Ej. Julio Mamani" required maxlength="100"></label>
+          <label class="field">Nombre de usuario<input name="username" placeholder="Ej. julio" required minlength="3" maxlength="50"></label>
+          <label class="field">Contraseña<input name="password" type="password" placeholder="Mínimo 6 caracteres" required minlength="6"></label>
+          <label class="field">Rol<select name="rol">
+            <option value="cliente">Productor / Cliente</option>
+            <option value="encargado">Encargado</option>
+            <option value="trabajador">Trabajador</option>
+          </select></label>
+        </div>
+        <div class="notice-inline">Las cuentas de <b>productor</b> entran por el portal del productor (<a href="/portal" target="_blank" rel="noopener">/portal</a>). Encargados y trabajadores entran por este panel.</div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit">Crear cuenta</button></div>
+      </form>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div><h3>Usuarios del sistema</h3><p>Todas las cuentas registradas y su rol.</p></div><span class="pill violet">${cache.usuarios.length} usuarios</span></div>
+      ${table(["NOMBRE", "USUARIO", "ROL", "ESTADO"], filas, "Todavía no hay usuarios.")}
     </div>`;
 }
 
@@ -522,6 +587,8 @@ function bindPage() {
   bind("create-farm-form", "/inventario/fincas", (o) => ({ ...o, numero: Number(o.numero) }), "Finca registrada.");
   bind("create-plot-form", "/inventario/parcelas",
     (o) => ({ ...o, ...num(o, ["finca_id", "numero", "superficie_ha"]) }), "Parcela registrada.");
+
+  bind("create-user-form", "/auth/usuarios", (o) => o, "Cuenta creada correctamente.");
 
   // Asignar finca a un productor
   const assignForm = $("#assign-farm-form");

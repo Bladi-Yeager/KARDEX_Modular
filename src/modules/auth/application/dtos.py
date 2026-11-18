@@ -27,6 +27,15 @@ class AdminBootstrap(BaseModel):
     nombre_completo: str = Field(min_length=3, max_length=100)
 
 
+class UsuarioCreateAdmin(BaseModel):
+    """El administrador crea una cuenta y elige su rol (nunca 'admin')."""
+
+    username: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=6, max_length=72)
+    nombre_completo: str = Field(min_length=3, max_length=100)
+    rol: str = "cliente"
+
+
 class UsuarioLogin(BaseModel):
     username: str
     password: str

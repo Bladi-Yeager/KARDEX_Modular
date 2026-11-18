@@ -51,22 +51,27 @@ La primera vez tarda un poco (descarga MySQL y phpMyAdmin). Después es rápido.
 Datos para phpMyAdmin: **Servidor** `db`, **Usuario** `grupo3`, **Contraseña** `ciego123`
 (también funciona con el usuario `root`).
 
+Cuenta de ejemplo del portal del productor: **`julio`** / **`julio123`**
+(ve la Finca El Paraíso y la Finca La Esperanza con sus cosechas y su Kardex).
+
 ---
 
 ## Perfiles del sistema
 
 | Rol | Cómo se crea | Qué puede hacer |
 |---|---|---|
-| **admin** | Una sola vez con `/auth/bootstrap-admin` | Todo: usuarios, invitaciones, inventario, cosechas, Kardex |
-| **encargado** | Con **código de invitación** | Inventario, cosecheros, cosechas y movimientos |
-| **trabajador** | Con **código de invitación** | Consulta la información autorizada |
-| **cliente** (productor) | **Registro libre** | Solo consulta su propio Kardex, sin editar nada |
+| **admin** | Una sola vez con `/auth/bootstrap-admin` | Todo: cuentas, invitaciones, inventario, cosechas, Kardex |
+| **encargado** | **Código de invitación** o lo crea el admin | Inventario, cosecheros, cosechas y movimientos |
+| **trabajador** | **Código de invitación** o lo crea el admin | Consulta la información autorizada |
+| **cliente** (productor) | **Registro libre** o lo crea el admin | Solo consulta su propio Kardex, sin editar nada |
 
 Reglas de seguridad implementadas:
 
-- Solo existe **un administrador principal**.
+- Solo existe **un administrador principal** (no se puede crear otro desde el panel).
 - El registro libre **siempre** crea un `cliente`; el formulario no permite elegir rol.
-- Encargados y trabajadores necesitan una **invitación de un solo uso y con vencimiento**.
+- El **administrador** puede crear cuentas de `cliente`, `encargado` o `trabajador`
+  desde **Cuentas y usuarios**, sin usar códigos de invitación.
+- Encargados y trabajadores también pueden registrarse con una **invitación de un solo uso y con vencimiento**.
 - Las contraseñas se guardan con **bcrypt** (con sal). Las cuentas viejas con SHA-256
   siguen entrando y su hash se actualiza solo al iniciar sesión.
 - La sesión usa **token JWT**; los endpoints están protegidos por rol.
@@ -87,13 +92,35 @@ Secciones según el perfil:
 
 | Perfil | Secciones |
 |---|---|
-| **admin** | Resumen, Productos y lotes, Movimientos Kardex, Cosechas, Cosecheros, Fincas y parcelas, Clientes y fincas, Invitaciones |
+| **admin** | Resumen, Productos y lotes, Movimientos Kardex, Cosechas, Cosecheros, Fincas y parcelas, Clientes y fincas, Cuentas y usuarios, Invitaciones |
 | **encargado** | Resumen, Productos y lotes, Movimientos Kardex, Cosechas, Cosecheros, Fincas y parcelas |
 | **trabajador** | Mi espacio, Registrar cosecha, Consultar lotes |
 
-Desde **Clientes y fincas** el administrador asigna o quita fincas a cada productor.
-Desde **Invitaciones** genera los códigos de un solo uso para encargados y trabajadores.
-El panel usa el **token JWT** y respeta los permisos del backend.
+Desde **Cuentas y usuarios** el administrador crea cuentas nuevas y elige su rol
+(productor, encargado o trabajador). Desde **Clientes y fincas** asigna o quita
+fincas a cada productor: los desplegables muestran los productores y las fincas
+reales, con la etiqueta de a quién pertenece cada finca. Si todavía no hay
+productores o fincas, la pantalla avisa y ofrece los botones **Crear cuenta** y
+**Crear finca**. Desde **Invitaciones** genera los códigos de un solo uso para
+encargados y trabajadores. El panel usa el **token JWT** y respeta los permisos
+del backend.
+
+Cada vista tiene su enlace directo, por ejemplo `/admin#cosechas` o
+`/admin#users`, y se puede compartir o guardar en favoritos.
+
+### Datos de ejemplo
+
+La primera vez que arranca el sistema se crean datos de ejemplo para que se vea
+funcionando (fincas, parcelas, cosecheros, lotes, cosechas y movimientos), con un
+productor llamado **julio**:
+
+| Usuario | Contraseña | Rol | Datos |
+|---|---|---|---|
+| `julio` | `julio123` | cliente (productor) | Finca El Paraíso y Finca La Esperanza, con sus cosechas y Kardex |
+
+Además queda la **Finca San José** sin asignar, para probar la asignación desde
+**Clientes y fincas**. Los datos de ejemplo solo se crean si la base está vacía;
+si ya existen, no se duplican ni se sobrescriben.
 
 ---
 
@@ -186,6 +213,24 @@ El código **se vence** y **no se puede usar dos veces**.
 
 ---
 
+## Crear cuentas desde el administrador
+
+El administrador también puede crear cuentas directamente, sin códigos:
+
+```http
+POST /auth/usuarios
+Authorization: Bearer <token del admin>
+Content-Type: application/json
+
+{ "username": "maria", "password": "clave123", "nombre_completo": "María Flores", "rol": "cliente" }
+```
+
+Los roles permitidos son `cliente`, `encargado` y `trabajador`. El rol `admin`
+está bloqueado: responde `400`, porque solo puede existir un administrador principal.
+En el panel se hace desde **Cuentas y usuarios**.
+
+---
+
 ## Cómo usar Swagger con token
 
 1. Abre http://localhost:8001/docs
@@ -208,6 +253,7 @@ El código **se vence** y **no se puede usar dos veces**.
 | POST | `/auth/login` | público | Devuelve el token |
 | GET | `/auth/me` | autenticado | Datos del usuario actual |
 | GET | `/auth/usuarios` | admin | Lista usuarios |
+| POST | `/auth/usuarios` | admin | Crea una cuenta (cliente, encargado o trabajador) |
 | POST | `/auth/invitaciones` | admin | Crea invitación |
 | GET | `/auth/invitaciones` | admin | Lista invitaciones |
 

@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.core.database import Base, engine
+from src.core.demo_data import seed_demo_data
 from src.core.migrate import run_migrations
 from src.modules.auth.infrastructure import models_db as auth_models
 from src.modules.supliers.infrastructure import models_db as supliers_models
@@ -28,6 +29,9 @@ app = FastAPI(
 # Crea las tablas que falten y actualiza una base de datos antigua sin perder datos.
 Base.metadata.create_all(bind=engine)
 run_migrations()
+
+# Datos de ejemplo (solo la primera vez, si la base esta vacia).
+seed_demo_data()
 
 app.include_router(auth_router)
 app.include_router(supliers_router)

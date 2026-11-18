@@ -21,6 +21,7 @@ from src.modules.auth.infrastructure.external_adapters import PasswordHasher
 from src.modules.auth.infrastructure.tokens import create_access_token
 
 ROLES_CON_INVITACION = ("encargado", "trabajador")
+ROLES_QUE_CREA_ADMIN = ("cliente", "encargado", "trabajador")
 
 
 class AuthService:
@@ -62,6 +63,13 @@ class AuthService:
         if self.repository.exists_admin():
             raise AdminYaExiste()
         return self._crear(data, "admin")
+
+    def crear_usuario(self, data) -> Usuario:
+        """El administrador crea una cuenta eligiendo el rol (menos 'admin')."""
+        rol = (data.rol or "cliente").strip().lower()
+        if rol not in ROLES_QUE_CREA_ADMIN:
+            raise RolInvalido(data.rol)
+        return self._crear(data, rol)
 
     # ------------------------------------------------------------------ login
     def login(self, data: UsuarioLogin) -> dict:
