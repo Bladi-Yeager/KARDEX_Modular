@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.core.database import Base, engine
@@ -37,12 +37,19 @@ app.include_router(portal_router)
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 app.mount("/portal/static", StaticFiles(directory=STATIC_DIR / "portal"), name="portal-static")
+app.mount("/inicio/static", StaticFiles(directory=STATIC_DIR / "inicio"), name="inicio-static")
 
 
 @app.get("/", include_in_schema=False)
 def raiz():
-    """Al entrar a localhost:8001 se abre directamente el portal del productor."""
-    return RedirectResponse(url="/portal")
+    """Al entrar a localhost:8001 se abre el centro de accesos."""
+    return FileResponse(STATIC_DIR / "inicio" / "index.html")
+
+
+@app.get("/inicio", include_in_schema=False)
+def inicio():
+    """Centro de accesos: administrador, productor y base de datos."""
+    return FileResponse(STATIC_DIR / "inicio" / "index.html")
 
 
 @app.get("/portal", include_in_schema=False)
