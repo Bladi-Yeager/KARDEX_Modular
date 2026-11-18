@@ -39,6 +39,8 @@ services:
       - "8001:8000"
     environment:
       - DATABASE_URL=mysql+pymysql://grupo3:ciego123@db:3306/db_kardex
+      - SECRET_KEY=${SECRET_KEY:-cambia-esta-clave-por-una-larga-y-secreta-kardex-2026}
+      - TOKEN_EXPIRE_MINUTES=${TOKEN_EXPIRE_MINUTES:-480}
     depends_on:
       - db
     networks:

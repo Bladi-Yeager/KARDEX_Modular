@@ -18,8 +18,19 @@ class FincaService:
         return finca
 
     def create(self, data: FincaCreate) -> Finca:
-        finca = Finca(numero=data.numero, nombre=data.nombre, ubicacion=data.ubicacion)
+        finca = Finca(
+            numero=data.numero,
+            nombre=data.nombre,
+            ubicacion=data.ubicacion,
+            usuario_id=data.usuario_id,
+        )
         return self.repository.add(finca)
+
+    def asignar_usuario(self, finca_id: int, usuario_id) -> Finca:
+        finca = self.repository.asignar_usuario(finca_id, usuario_id)
+        if not finca:
+            raise FincaNoEncontrada(finca_id)
+        return finca
 
 
 class ParcelaService:

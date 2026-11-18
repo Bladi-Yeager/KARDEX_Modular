@@ -1,17 +1,52 @@
+from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel
+
+from pydantic import BaseModel, Field
 
 
-class UsuarioCreate(BaseModel):
-    username: str
-    password: str
-    nombre_completo: str
-    rol: str = "operador"
+class ClienteRegister(BaseModel):
+    """Registro libre: solo crea clientes/productores. El rol no se elige."""
+
+    username: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=6, max_length=72)
+    nombre_completo: str = Field(min_length=3, max_length=100)
+
+
+class StaffRegister(BaseModel):
+    """Registro con invitacion: el rol lo define la invitacion, no el formulario."""
+
+    username: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=6, max_length=72)
+    nombre_completo: str = Field(min_length=3, max_length=100)
+    codigo_invitacion: str = Field(min_length=4, max_length=40)
+
+
+class AdminBootstrap(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=6, max_length=72)
+    nombre_completo: str = Field(min_length=3, max_length=100)
 
 
 class UsuarioLogin(BaseModel):
     username: str
     password: str
+
+
+class InvitacionCreate(BaseModel):
+    rol: str = "trabajador"
+    dias_vigencia: int = Field(default=7, ge=1, le=90)
+
+
+class InvitacionOut(BaseModel):
+    id: int
+    codigo: str
+    rol: str
+    expira_en: datetime
+    usado: bool
+    activo: bool
+
+    class Config:
+        from_attributes = True
 
 
 class UsuarioOut(BaseModel):
@@ -23,3 +58,9 @@ class UsuarioOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class LoginOut(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    usuario: UsuarioOut

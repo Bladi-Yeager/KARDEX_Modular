@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, func
+from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, ForeignKey, func
 from src.core.database import Base
 
 
@@ -10,4 +10,5 @@ class CosecheroDB(Base):
     ci = Column(String(20), nullable=True)
     telefono = Column(String(20), nullable=True)
     activo = Column(Boolean, nullable=False, default=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True, index=True)
     creado_en = Column(TIMESTAMP, server_default=func.now())

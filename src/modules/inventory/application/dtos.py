@@ -7,6 +7,7 @@ class FincaCreate(BaseModel):
     numero: int
     nombre: Optional[str] = None
     ubicacion: Optional[str] = None
+    usuario_id: Optional[int] = None
 
 
 class FincaOut(FincaCreate):
@@ -15,6 +16,10 @@ class FincaOut(FincaCreate):
 
     class Config:
         from_attributes = True
+
+
+class FincaAsignar(BaseModel):
+    usuario_id: Optional[int] = None
 
 
 class ParcelaCreate(BaseModel):

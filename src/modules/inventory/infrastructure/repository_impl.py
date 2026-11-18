@@ -10,10 +10,17 @@ class FincaRepositoryImpl:
 
     @staticmethod
     def _to_domain(row: FincaDB) -> Finca:
-        return Finca(id=row.id, numero=row.numero, nombre=row.nombre, ubicacion=row.ubicacion, activo=row.activo)
+        return Finca(
+            id=row.id,
+            numero=row.numero,
+            nombre=row.nombre,
+            ubicacion=row.ubicacion,
+            usuario_id=row.usuario_id,
+            activo=row.activo,
+        )
 
     def list_all(self) -> List[Finca]:
-        rows = self.db.query(FincaDB).all()
+        rows = self.db.query(FincaDB).order_by(FincaDB.numero).all()
         return [self._to_domain(row) for row in rows]
 
     def get_by_id(self, finca_id: int) -> Optional[Finca]:
@@ -21,8 +28,22 @@ class FincaRepositoryImpl:
         return self._to_domain(row) if row else None
 
     def add(self, finca: Finca) -> Finca:
-        row = FincaDB(numero=finca.numero, nombre=finca.nombre, ubicacion=finca.ubicacion)
+        row = FincaDB(
+            numero=finca.numero,
+            nombre=finca.nombre,
+            ubicacion=finca.ubicacion,
+            usuario_id=finca.usuario_id,
+        )
         self.db.add(row)
+        self.db.commit()
+        self.db.refresh(row)
+        return self._to_domain(row)
+
+    def asignar_usuario(self, finca_id: int, usuario_id: Optional[int]) -> Optional[Finca]:
+        row = self.db.query(FincaDB).get(finca_id)
+        if row is None:
+            return None
+        row.usuario_id = usuario_id
         self.db.commit()
         self.db.refresh(row)
         return self._to_domain(row)

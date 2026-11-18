@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi Kardex · Portal del Productor</title>
+<link rel="stylesheet" href="/portal/static/estilos.css">
+</head>
+<body class="panel-body">
+
+<header class="topbar">
+  <div class="topbar-marca">
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+      <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+    </svg>
+    <span>KARDEX <small>Agrícola</small></span>
+  </div>
+
+  <div class="topbar-acciones">
+    <span class="badge-solo-lectura">Solo lectura</span>
+    <button class="btn-suave" id="btn-imprimir" title="Imprimir o guardar como PDF">Imprimir</button>
+    <div class="usuario">
+      <span class="usuario-nombre" id="usuario-nombre">—</span>
+      <button class="btn-salir" id="btn-salir">Salir</button>
+    </div>
+  </div>
+</header>
+
+<main class="panel">
+
+  <!-- Bienvenida -->
+  <section class="bienvenida">
+    <div>
+      <h1 id="saludo">Hola</h1>
+      <p class="muted" id="subtitulo">Este es el resumen de tu producción.</p>
+    </div>
+    <div class="bienvenida-fecha">
+      <span>Última actividad</span>
+      <strong id="ultima-actividad">—</strong>
+    </div>
+  </section>
+
+  <!-- Aviso si no tiene datos -->
+  <div class="aviso oculto" id="aviso-sin-datos">
+    <strong>Aún no tienes fincas asignadas.</strong>
+    <span>Pide al administrador que asocie tus fincas a tu cuenta para poder ver tu Kardex.</span>
+  </div>
+
+  <!-- Indicadores -->
+  <section class="kpis">
+    <article class="kpi">
+      <span class="kpi-etiqueta">Mis fincas</span>
+      <strong class="kpi-valor" id="kpi-fincas">0</strong>
+      <span class="kpi-pie" id="kpi-hectareas">0 ha en total</span>
+    </article>
+    <article class="kpi">
+      <span class="kpi-etiqueta">Hoja cosechada</span>
+      <strong class="kpi-valor" id="kpi-kg">0 kg</strong>
+      <span class="kpi-pie" id="kpi-cosechas">0 cosechas registradas</span>
+    </article>
+    <article class="kpi">
+      <span class="kpi-etiqueta">Monto pagado</span>
+      <strong class="kpi-valor" id="kpi-monto">Bs 0</strong>
+      <span class="kpi-pie">Según tus cosechas</span>
+    </article>
+    <article class="kpi kpi-destacado">
+      <span class="kpi-etiqueta">Saldo en almacén</span>
+      <strong class="kpi-valor" id="kpi-saldo">0 kg</strong>
+      <span class="kpi-pie" id="kpi-movimientos">Entradas 0 · Salidas 0</span>
+    </article>
+  </section>
+
+  <!-- Pestañas -->
+  <nav class="secciones" id="secciones">
+    <button class="seccion activo" data-vista="fincas">Mis fincas</button>
+    <button class="seccion" data-vista="cosechas">Mis cosechas</button>
+    <button class="seccion" data-vista="kardex">Mi Kardex</button>
+    <button class="seccion" data-vista="lotes">Mis lotes</button>
+  </nav>
+
+  <!-- Barra de filtros -->
+  <section class="filtros" id="filtros">
+    <div class="campo">
+      <label for="filtro-texto">Buscar</label>
+      <input type="search" id="filtro-texto" placeholder="Escribe para filtrar...">
+    </div>
+    <div class="campo">
+      <label for="filtro-desde">Desde</label>
+      <input type="date" id="filtro-desde">
+    </div>
+    <div class="campo">
+      <label for="filtro-hasta">Hasta</label>
+      <input type="date" id="filtro-hasta">
+    </div>
+    <button class="btn-suave" id="btn-limpiar">Limpiar</button>
+  </section>
+
+  <!-- Vistas -->
+  <section class="tabla-caja">
+    <div class="tabla-encabezado">
+      <h2 id="tabla-titulo">Mis fincas</h2>
+      <span class="muted" id="tabla-conteo"></span>
+    </div>
+
+    <div class="tabla-scroll">
+      <table class="tabla" id="tabla">
+        <thead id="tabla-cabeza"></thead>
+        <tbody id="tabla-cuerpo"></tbody>
+      </table>
+    </div>
+
+    <div class="vacio oculto" id="vacio">
+      <p>No hay información para mostrar.</p>
+    </div>
+  </section>
+
+  <p class="nota-pie">
+    Esta pantalla es de <strong>solo lectura</strong>. Si algún dato no es correcto,
+    comunícate con el encargado de tu finca.
+  </p>
+</main>
+
+<script>
+/* ============================================================
+   Portal del productor — solo lectura
+   ============================================================ */
+const API = "";
+const TOKEN_KEY = "kardex_token";
+const USER_KEY = "kardex_usuario";
+
+let datos = { resumen: null, fincas: [], cosechas: [], kardex: [], lotes: [] };
+let vistaActual = "fincas";
+
+const fmtNum = (n, dec = 2) =>
+  Number(n || 0).toLocaleString("es-BO", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+
+const fmtKg = (n) => fmtNum(n, 2) + " kg";
+const fmtBs = (n) => "Bs " + fmtNum(n, 2);
+
+function fmtFecha(valor) {
+  if (!valor) return "—";
+  const d = new Date(valor + "T00:00:00");
+  if (isNaN(d)) return valor;
+  return d.toLocaleDateString("es-BO", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function esc(texto) {
+  return String(texto ?? "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+
+/* ---------------------------------------------------------- sesión */
+function token() { return localStorage.getItem(TOKEN_KEY); }
+
+function salir() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  window.location.href = "/portal";
+}
+
+document.getElementById("btn-salir").addEventListener("click", salir);
+document.getElementById("btn-imprimir").addEventListener("click", () => window.print());
+
+async function api(ruta) {
+  const resp = await fetch(API + ruta, {
+    headers: { "Authorization": "Bearer " + token() }
+  });
+  if (resp.status === 401 || resp.status === 403) {
+    salir();
+    throw new Error("Sesión vencida");
+  }
+  if (!resp.ok) throw new Error("No se pudo cargar " + ruta);
+  return resp.json();
+}
+
+/* ---------------------------------------------------------- pestañas */
+document.querySelectorAll(".seccion").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".seccion").forEach(b => b.classList.remove("activo"));
+    btn.classList.add("activo");
+    vistaActual = btn.dataset.vista;
+    document.getElementById("filtro-texto").value = "";
+    document.getElementById("filtro-desde").value = "";
+    document.getElementById("filtro-hasta").value = "";
+    render();
+  });
+});
+
+document.getElementById("filtro-texto").addEventListener("input", render);
+document.getElementById("filtro-desde").addEventListener("change", render);
+document.getElementById("filtro-hasta").addEventListener("change", render);
+document.getElementById("btn-limpiar").addEventListener("click", () => {
+  document.getElementById("filtro-texto").value = "";
+  document.getElementById("filtro-desde").value = "";
+  document.getElementById("filtro-hasta").value = "";
+  render();
+});
+
+/* ---------------------------------------------------------- render */
+function aplicarFiltros(filas, campos) {
+  const texto = document.getElementById("filtro-texto").value.trim().toLowerCase();
+  const desde = document.getElementById("filtro-desde").value;
+  const hasta = document.getElementById("filtro-hasta").value;
+
+  return filas.filter(fila => {
+    if (texto) {
+      const contenido = campos.map(c => fila[c]).join(" ").toLowerCase();
+      if (!contenido.includes(texto)) return false;
+    }
+    if (fila.fecha) {
+      if (desde && fila.fecha < desde) return false;
+      if (hasta && fila.fecha > hasta) return false;
+    }
+    if (fila.fecha_ingreso) {
+      if (desde && fila.fecha_ingreso < desde) return false;
+      if (hasta && fila.fecha_ingreso > hasta) return false;
+    }
+    return true;
+  });
+}
+
+function pintarTabla(titulo, columnas, filas) {
+  document.getElementById("tabla-titulo").textContent = titulo;
+  document.getElementById("tabla-conteo").textContent =
+    filas.length + (filas.length === 1 ? " registro" : " registros");
+
+  document.getElementById("tabla-cabeza").innerHTML =
+    "<tr>" + columnas.map(c => `<th>${esc(c.titulo)}</th>`).join("") + "</tr>";
+
+  const cuerpo = document.getElementById("tabla-cuerpo");
+  cuerpo.innerHTML = filas.map(fila =>
+    "<tr>" + columnas.map(c => `<td>${c.render(fila)}</td>`).join("") + "</tr>"
+  ).join("");
+
+  document.getElementById("vacio").classList.toggle("oculto", filas.length > 0);
+  document.getElementById("tabla").classList.toggle("oculto", filas.length === 0);
+}
+
+function render() {
+  const filtros = document.getElementById("filtros");
+
+  if (vistaActual === "fincas") {
+    filtros.classList.add("oculto");
+    const filas = datos.fincas;
+    pintarTabla("Mis fincas", [
+      { titulo: "N°", render: f => esc(f.numero) },
+      { titulo: "Nombre", render: f => esc(f.nombre || "—") },
+      { titulo: "Ubicación", render: f => esc(f.ubicacion || "—") },
+      { titulo: "Parcelas", render: f => esc(f.parcelas) },
+      { titulo: "Hectáreas", render: f => fmtNum(f.hectareas, 2) + " ha" }
+    ], filas);
+    return;
+  }
+
+  filtros.classList.remove("oculto");
+
+  if (vistaActual === "cosechas") {
+    const filas = aplicarFiltros(datos.cosechas, ["finca", "parcela", "cosechero", "tipo_cosecha", "observacion"]);
+    pintarTabla("Mis cosechas", [
+      { titulo: "Fecha", render: f => fmtFecha(f.fecha) },
+      { titulo: "Finca", render: f => esc(f.finca || "—") },
+      { titulo: "Parcela", render: f => esc(f.parcela || "—") },
+      { titulo: "Cosechero", render: f => esc(f.cosechero || "—") },
+      { titulo: "Tipo", render: f => esc(f.tipo_cosecha) },
+      { titulo: "Kilos", render: f => `<span class="num">${fmtNum(f.kg, 2)}</span>` },
+      { titulo: "Monto (Bs)", render: f => `<span class="num">${fmtNum(f.monto_bs, 2)}</span>` }
+    ], filas);
+    return;
+  }
+
+  if (vistaActual === "kardex") {
+    const filas = aplicarFiltros(datos.kardex, ["detalle", "doc", "lote", "finca", "observacion"]);
+    pintarTabla("Mi Kardex (movimientos del almacén)", [
+      { titulo: "Fecha", render: f => fmtFecha(f.fecha) },
+      { titulo: "Detalle", render: f => esc(f.detalle) },
+      { titulo: "Documento", render: f => esc(f.doc || "—") },
+      { titulo: "Lote", render: f => esc(f.lote || "—") },
+      { titulo: "Entrada", render: f => `<span class="num entrada">${fmtNum(f.entrada_kg, 2)}</span>` },
+      { titulo: "Salida", render: f => `<span class="num salida">${fmtNum(f.salida_kg, 2)}</span>` },
+      { titulo: "Saldo", render: f => `<span class="num saldo">${fmtNum(f.saldo_kg, 2)}</span>` }
+    ], filas);
+    return;
+  }
+
+  if (vistaActual === "lotes") {
+    const filas = aplicarFiltros(datos.lotes, ["codigo", "finca", "detalle"]);
+    pintarTabla("Mis lotes", [
+      { titulo: "Código", render: f => esc(f.codigo) },
+      { titulo: "Finca", render: f => esc(f.finca || "—") },
+      { titulo: "Fecha de ingreso", render: f => fmtFecha(f.fecha_ingreso) },
+      { titulo: "Detalle", render: f => esc(f.detalle || "—") }
+    ], filas);
+  }
+}
+
+/* ---------------------------------------------------------- carga */
+function pintarResumen(r) {
+  document.getElementById("saludo").textContent = "Hola, " + (r.productor || "");
+  document.getElementById("usuario-nombre").textContent = r.productor || r.username;
+
+  document.getElementById("kpi-fincas").textContent = r.fincas;
+  document.getElementById("kpi-hectareas").textContent = fmtNum(r.hectareas, 2) + " ha en total";
+  document.getElementById("kpi-kg").textContent = fmtKg(r.total_kg);
+  document.getElementById("kpi-cosechas").textContent =
+    r.total_cosechas + (r.total_cosechas === 1 ? " cosecha registrada" : " cosechas registradas");
+  document.getElementById("kpi-monto").textContent = fmtBs(r.total_monto_bs);
+  document.getElementById("kpi-saldo").textContent = fmtKg(r.saldo_kg);
+  document.getElementById("kpi-movimientos").textContent =
+    "Entradas " + fmtNum(r.entradas_kg, 2) + " · Salidas " + fmtNum(r.salidas_kg, 2);
+  document.getElementById("ultima-actividad").textContent = fmtFecha(r.ultima_actividad);
+
+  document.getElementById("aviso-sin-datos").classList.toggle("oculto", r.tiene_datos);
+  document.getElementById("subtitulo").textContent = r.tiene_datos
+    ? "Este es el resumen de tu producción."
+    : "Todavía no hay movimientos registrados en tus fincas.";
+}
+
+async function cargar() {
+  if (!token()) { window.location.href = "/portal"; return; }
+
+  try {
+    const guardado = localStorage.getItem(USER_KEY);
+    if (guardado) {
+      const u = JSON.parse(guardado);
+      document.getElementById("usuario-nombre").textContent = u.nombre_completo || u.username;
+    }
+
+    const [resumen, fincas, cosechas, kardex, lotes] = await Promise.all([
+      api("/portal/api/resumen"),
+      api("/portal/api/mis-fincas"),
+      api("/portal/api/mis-cosechas"),
+      api("/portal/api/mi-kardex"),
+      api("/portal/api/mis-lotes")
+    ]);
+
+    datos = { resumen, fincas, cosechas, kardex, lotes };
+    pintarResumen(resumen);
+    render();
+  } catch (err) {
+    if (err.message !== "Sesión vencida") {
+      document.getElementById("subtitulo").textContent =
+        "No se pudo cargar la información. Revisa tu conexión.";
+    }
+  }
+}
+
+cargar();
+</script>
+</body>
+</html>

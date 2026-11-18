@@ -9,6 +9,7 @@ class FincaDB(Base):
     numero = Column(Integer, unique=True, nullable=False)
     nombre = Column(String(100), nullable=True)
     ubicacion = Column(String(150), nullable=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True, index=True)
     activo = Column(Boolean, nullable=False, default=True)
 
 

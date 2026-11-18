@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portal del Productor · Kardex Agrícola</title>
+<link rel="stylesheet" href="/portal/static/estilos.css">
+</head>
+<body class="auth-body">
+
+  <main class="auth-shell">
+
+    <!-- Lado de marca -->
+    <section class="brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+          <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+        </svg>
+        <div>
+          <strong>KARDEX</strong>
+          <span>Agrícola · Hoja fresca</span>
+        </div>
+      </div>
+
+      <h1>Tu producción,<br>siempre a la vista.</h1>
+      <p class="brand-text">
+        Consulta las cosechas de tus fincas, los movimientos de tu almacén
+        y el saldo de tu Kardex desde cualquier lugar.
+      </p>
+
+      <ul class="brand-list">
+        <li><span>✓</span> Solo lectura: tus datos no se modifican.</li>
+        <li><span>✓</span> Ves únicamente tus fincas y tus cosechas.</li>
+        <li><span>✓</span> Funciona en computadora, tablet y celular.</li>
+      </ul>
+    </section>
+
+    <!-- Lado del formulario -->
+    <section class="card">
+      <div class="tabs" role="tablist">
+        <button class="tab activo" data-tab="login" role="tab">Ingresar</button>
+        <button class="tab" data-tab="registro" role="tab">Crear cuenta</button>
+      </div>
+
+      <!-- LOGIN -->
+      <form id="form-login" class="form" autocomplete="on">
+        <h2>Bienvenido de nuevo</h2>
+        <p class="muted">Entra con tu usuario para ver tu Kardex.</p>
+
+        <label>Usuario
+          <input type="text" name="username" id="login-username" required autocomplete="username" placeholder="tu usuario">
+        </label>
+
+        <label>Contraseña
+          <input type="password" name="password" id="login-password" required autocomplete="current-password" placeholder="••••••••">
+        </label>
+
+        <button type="submit" class="btn-principal" id="btn-login">Entrar a mi Kardex</button>
+        <div class="mensaje" id="msg-login" role="alert"></div>
+
+        <p class="pie-form">¿Eres encargado o trabajador? Pide tu código de invitación al administrador.</p>
+      </form>
+
+      <!-- REGISTRO -->
+      <form id="form-registro" class="form oculto" autocomplete="on">
+        <h2>Crea tu cuenta de productor</h2>
+        <p class="muted">El registro es libre. Tu cuenta será de tipo <strong>productor (cliente)</strong>.</p>
+
+        <label>Nombre completo
+          <input type="text" name="nombre_completo" id="reg-nombre" required placeholder="Ej. Bladimir Soria">
+        </label>
+
+        <label>Usuario
+          <input type="text" name="username" id="reg-username" required placeholder="Ej. bladimir" minlength="3">
+        </label>
+
+        <label>Contraseña
+          <input type="password" name="password" id="reg-password" required placeholder="Mínimo 6 caracteres" minlength="6">
+        </label>
+
+        <label>Repite la contraseña
+          <input type="password" id="reg-password2" required placeholder="••••••••">
+        </label>
+
+        <button type="submit" class="btn-principal" id="btn-registro">Crear mi cuenta</button>
+        <div class="mensaje" id="msg-registro" role="alert"></div>
+
+        <p class="pie-form">Al crear la cuenta solo podrás <strong>ver</strong> tu información. No podrás editar ni borrar datos.</p>
+      </form>
+    </section>
+  </main>
+
+  <footer class="auth-footer">
+    Kardex Agrícola · Sistema de gestión y control de producción
+  </footer>
+
+<script>
+const API = "";
+
+/* ---------------------------------------------------------- pestañas */
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("activo"));
+    tab.classList.add("activo");
+    const esLogin = tab.dataset.tab === "login";
+    document.getElementById("form-login").classList.toggle("oculto", !esLogin);
+    document.getElementById("form-registro").classList.toggle("oculto", esLogin);
+  });
+});
+
+/* ---------------------------------------------------------- utilidades */
+function mostrarMensaje(id, texto, tipo) {
+  const el = document.getElementById(id);
+  el.textContent = texto;
+  el.className = "mensaje visible " + (tipo || "error");
+}
+
+function limpiarMensaje(id) {
+  const el = document.getElementById(id);
+  el.textContent = "";
+  el.className = "mensaje";
+}
+
+async function leerRespuesta(resp) {
+  let datos = null;
+  try { datos = await resp.json(); } catch (e) { /* sin cuerpo */ }
+  if (!resp.ok) {
+    let texto = "Ocurrió un error. Intenta de nuevo.";
+    if (datos && datos.detail) {
+      texto = typeof datos.detail === "string" ? datos.detail : JSON.stringify(datos.detail);
+    }
+    throw new Error(texto);
+  }
+  return datos;
+}
+
+function guardarSesion(datos) {
+  localStorage.setItem("kardex_token", datos.access_token);
+  localStorage.setItem("kardex_usuario", JSON.stringify(datos.usuario));
+}
+
+/* ---------------------------------------------------------- login */
+document.getElementById("form-login").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  limpiarMensaje("msg-login");
+  const boton = document.getElementById("btn-login");
+  boton.disabled = true;
+  boton.textContent = "Entrando...";
+
+  try {
+    const resp = await fetch(API + "/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: document.getElementById("login-username").value.trim(),
+        password: document.getElementById("login-password").value
+      })
+    });
+    const datos = await leerRespuesta(resp);
+    guardarSesion(datos);
+    window.location.href = "/portal/panel";
+  } catch (err) {
+    mostrarMensaje("msg-login", err.message, "error");
+    boton.disabled = false;
+    boton.textContent = "Entrar a mi Kardex";
+  }
+});
+
+/* ---------------------------------------------------------- registro */
+document.getElementById("form-registro").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  limpiarMensaje("msg-registro");
+
+  const password = document.getElementById("reg-password").value;
+  const password2 = document.getElementById("reg-password2").value;
+  if (password !== password2) {
+    mostrarMensaje("msg-registro", "Las contraseñas no coinciden.", "error");
+    return;
+  }
+
+  const boton = document.getElementById("btn-registro");
+  boton.disabled = true;
+  boton.textContent = "Creando cuenta...";
+
+  try {
+    const resp = await fetch(API + "/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nombre_completo: document.getElementById("reg-nombre").value.trim(),
+        username: document.getElementById("reg-username").value.trim(),
+        password: password
+      })
+    });
+    const usuario = await leerRespuesta(resp);
+
+    // Entra automáticamente después de registrarse.
+    const respLogin = await fetch(API + "/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: document.getElementById("reg-username").value.trim(),
+        password: password
+      })
+    });
+    const datos = await leerRespuesta(respLogin);
+    guardarSesion(datos);
+    window.location.href = "/portal/panel";
+  } catch (err) {
+    mostrarMensaje("msg-registro", err.message, "error");
+    boton.disabled = false;
+    boton.textContent = "Crear mi cuenta";
+  }
+});
+
+/* Si ya tiene sesión, va directo al panel */
+if (localStorage.getItem("kardex_token")) {
+  window.location.href = "/portal/panel";
+}
+</script>
+</body>
+</html>

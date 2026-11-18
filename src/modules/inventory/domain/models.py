@@ -8,6 +8,7 @@ class Finca:
     numero: int
     nombre: Optional[str] = None
     ubicacion: Optional[str] = None
+    usuario_id: Optional[int] = None
     id: Optional[int] = None
     activo: bool = True
 
