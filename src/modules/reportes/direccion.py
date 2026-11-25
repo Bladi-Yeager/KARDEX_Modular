@@ -21,6 +21,12 @@ def periodo(db, inicio, fin, apertura, cierre):
         RegistroFinancieroDB.fecha.between(inicio, fin), RegistroFinancieroDB.anulado.is_(False)
     ).all()
     activos = {r.lote_id for r in movimientos + registros if r.lote_id}
+    gastos_por_lote = {}
+    for registro in registros:
+        if registro.tipo == "costo" and registro.lote_id:
+            grupo = gastos_por_lote.setdefault(registro.lote_id, {})
+            concepto = registro.concepto.strip().casefold()
+            grupo[concepto] = grupo.get(concepto, 0) + registro.monto_bs
     filas = []
     for lote_id in sorted(activos):
         if lote_id not in cierre:
@@ -32,7 +38,10 @@ def periodo(db, inicio, fin, apertura, cierre):
         costo = costo - previo if costo is not None and previo is not None else None
         ventas = actual["ventas_bs"] - anterior.get("ventas_bs", 0)
         gastos = actual["gastos_bs"] - anterior.get("gastos_bs", 0)
-        filas.append(dict(codigo=actual["codigo"], producto=actual["producto"], ventas=ventas,
+        importes = gastos_por_lote.get(lote_id, {})
+        principal = max(importes, key=importes.get) if importes else None
+        filas.append(dict(gasto_principal=dict(concepto=principal, monto=importes[principal]) if principal else None,
+                          codigo=actual["codigo"], producto=actual["producto"], ventas=ventas,
                           gastos=gastos, costo=costo, resultado=None if costo is None else ventas-gastos-costo))
     ventas = sum(f["ventas"] for f in filas) + sum(r.monto_bs for r in registros if not r.lote_id and r.tipo=="venta")
     generales = sum(r.monto_bs for r in registros if not r.lote_id and r.tipo=="costo")

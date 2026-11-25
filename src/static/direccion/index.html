@@ -1,29 +1,123 @@
 <!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Consulta de la empresa · Kardex agrícola</title><style>
 *{box-sizing:border-box}body{margin:0;background:#f4f6ef;color:#19362f;font:16px/1.55 "DM Sans",system-ui,sans-serif}header,main{max-width:1180px;margin:auto;padding:20px clamp(16px,4vw,48px)}header{display:flex;justify-content:space-between;border-bottom:1px solid #c9d5c7}a{color:#215448}h1,h2,h3{line-height:1.12}h1{font:normal clamp(34px,5vw,58px)/1.03 Georgia,serif;margin:.25em 0}h2{font-size:24px}p{max-width:76ch}.hero{background:#183e35;color:#fff8df;border-radius:16px;padding:clamp(18px,4vw,38px)}.hero p{margin-bottom:0}.card,form,.tiles>div{background:white;border:1px solid #cad6ca;border-radius:12px;padding:18px;margin:16px 0}.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.tiles>div{margin-bottom:0;border-top:4px solid #4a7e67}.tiles strong{display:block;font-size:24px}.tools{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:16px 0}button,select,input{font:inherit;padding:9px 13px;border-radius:7px;border:1px solid #8da99c}button{cursor:pointer;background:#215544;color:white}form{max-width:450px}form label{display:block;margin:10px 0}input{width:100%}table{width:100%;border-collapse:collapse}th,td{padding:9px;text-align:left;border-bottom:1px solid #dce4db}.scroll{overflow:auto}.warn{color:#833318}.ok{color:#226844}[hidden]{display:none!important}
-</style><header><b>Kardex agrícola</b><a href="/">Centro de accesos</a></header><main><div class="hero"><h1 id="title">Dirección de la empresa</h1><p id="sub">Ganancias, pérdidas e incidencias del acopio.</p></div><form id="login"><h2>Iniciar sesión</h2><label>Usuario<input name="username" autocomplete="username" required></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label><button>Entrar</button></form><p id="msg" role="status"></p><section id="panel" hidden><div class="tools"><label id="period">Período <select id="days"><option value="7">7 días</option><option selected value="30">30 días</option><option value="90">90 días</option></select></label><button id="reload">Actualizar</button><button id="excel">Descargar Excel por lote</button><button id="logout">Cerrar sesión</button></div><div id="report"></div></section></main><script>
+
+.jefatura body{background:#f4f6fa;color:#1d2d43}
+.jefatura header{border-color:#ced6e2}
+.jefatura a{color:#234b77}
+.jefatura .hero{background:linear-gradient(112deg,#132941 15%,#244669 80%,#354f6d);color:#fff;border-left:5px solid #dbab64}
+.jefatura .hero p{color:#dbe4ef}
+.jefatura .card,.jefatura form,.jefatura .tiles>div{border-color:#d4dce7;box-shadow:0 3px 12px #152e4909}
+.jefatura .tiles>div{border-top-color:#6986aa}
+.jefatura .tiles>div:nth-child(3){border-top-color:#ac5d52}
+.jefatura .tiles>div:nth-child(4){border-top-color:#bd9456}
+.jefatura button{background:#203e61;border-color:#203e61}
+.jefatura button:hover{background:#31567d}
+.jefatura input,.jefatura select{border-color:#a0aec0}
+.jefatura :focus-visible{outline:3px solid #b87930;outline-offset:3px}
+.jefatura th{background:#eff3f9}
+.jefatura td,.jefatura th{border-color:#d6deea}
+.jefatura .gain{color:#245d8c}
+.jefatura .loss{color:#a33d35}
+
+.jefatura .reporthead small,.casegrid small{font-weight:700;letter-spacing:.1em;color:#526782}.reporthead h2{font:500 clamp(26px,4vw,38px) Georgia,serif;margin:3px 0}.reporthead p{margin:3px 0}.casegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:12px;margin-bottom:18px}.casegrid section{background:#eef4fa;border-left:4px solid #49789e;border-radius:6px;padding:14px}.casegrid section.negativa{background:#faf0ee;border-color:#a65549}.casegrid h3{margin:8px 0}.casegrid p{font-size:.96rem}.analysis{border-left:3px solid #c69854;padding-left:12px}.reporthead{margin-top:25px}.jefatura .tiles>div:last-child{background:#f1f5fa}.jefatura .card h2{font-size:21px}.jefatura table{font-variant-numeric:tabular-nums}
+</style><script>document.documentElement.classList.toggle("jefatura", location.pathname === "/jefe");</script><header><b>Kardex agrícola</b><a href="/">Centro de accesos</a></header><main><div class="hero"><h1 id="title">Dirección de la empresa</h1><p id="sub">Revisa el resultado de cada lote y los registros que explican las cifras.</p></div><form id="login"><h2>Iniciar sesión</h2><label>Usuario<input name="username" autocomplete="username" required></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label><button>Entrar</button></form><p id="msg" role="status"></p><section id="panel" hidden><div class="tools"><label id="sourceLabel">Informe <select id="source"><option value="demo">Demostración</option><option value="real" selected>Datos de la empresa</option></select></label><label id="period">Período <select id="days"><option value="7">7 días</option><option selected value="30">30 días</option><option value="90">90 días</option></select></label><button id="reload">Actualizar</button><button id="excel">Descargar Excel por lote</button><button id="logout">Cerrar sesión</button></div><div id="report"></div></section></main><script>
 const $=id=>document.getElementById(id),role=location.pathname==='/soporte'?'soporte':'jefe';
 let token=sessionStorage.getItem('consulta_token'),revision=0;
-const fmt=n=>new Intl.NumberFormat('es-BO',{maximumFractionDigits:2}).format(n);
+const fmt=n=>new Intl.NumberFormat('es-BO',{maximumFractionDigits:2}).format(Number(n) === 0 ? 0 : n);
 const bs=n=>n==null?'Pendiente':'Bs '+fmt(n);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function table(cols,rows,empty){return rows.length?'<div class="scroll"><table><thead><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p>'+empty+'</p>'}
 function card(title,body){return '<section class="card"><h2>'+title+'</h2>'+body+'</section>'}
 function end(){revision++;sessionStorage.removeItem('consulta_token');token=null;$('panel').hidden=true;$('report').textContent='';$('login').hidden=false;}
 async function api(url,options={}){const r=await fetch(url,{...options,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})}});if(!r.ok){const e=await r.json().catch(()=>({}));if(r.status===401)end();throw Error(e.detail||'Consulta no disponible')}return r}
-const tile=(label,value)=>'<div>'+label+'<strong>'+value+'</strong></div>';
-function draw(d){const a=d.actual,b=d.anterior,valid=a.resultado!=null&&b.resultado!=null;
-const explain=!a.actividad?'Sin actividad registrada para el período seleccionado.':a.resultado==null?'Hay lotes activos con costos pendientes. El resultado total queda pendiente.':a.resultado<0?'Los costos registrados superaron las ventas en '+bs(-a.resultado)+'.':'Las ventas cubrieron los costos registrados. Margen: '+bs(a.resultado)+'.';
-let comparison='<p>Actual: '+a.desde+' al '+a.hasta+'. Anterior: '+b.desde+' al '+b.hasta+'.</p>';
-if(valid){let delta=a.resultado-b.resultado;comparison+='<p><b>El margen '+(delta<0?'bajó en '+bs(-delta):delta>0?'subió en '+bs(delta):'se mantuvo')+'.</b> La tabla desglosa el aporte de cada componente.</p>'}else comparison+='<p>La variación del margen requiere actividad y costos completos en ambos períodos.</p>';
-comparison+=table(['Componente','Actual','Anterior','Efecto sobre el margen'],[['Ventas','ventas',1],['Costo de salidas','costo',-1],['Otros gastos','gastos',-1]].map(([t,k,sign])=>[t,bs(a[k]),bs(b[k]),a[k]==null||b[k]==null||!b.actividad||!a.actividad?'—':bs(sign*(a[k]-b[k]))]),'');
-const conceptos=[...new Set([...Object.keys(a.conceptos),...Object.keys(b.conceptos)])].map(k=>[k,a.conceptos[k]||0,b.conceptos[k]||0]).sort((x,y)=>(y[1]-y[2])-(x[1]-x[2]));
-const lots=[...a.lotes].sort((x,y)=>(x.resultado??Infinity)-(y.resultado??Infinity));
-$('report').innerHTML='<div class="tiles">'+tile('Resultado del período',a.actividad?bs(a.resultado):'Sin actividad')+tile('Resultado anterior',b.actividad?bs(b.resultado):'Sin actividad')+tile('Lotes con pérdida',lots.filter(l=>l.resultado!=null&&l.resultado<0).length)+tile('Lotes con datos pendientes',d.pendientes.length)+'</div>'+card('Qué cambió','<p>'+explain+'</p>'+comparison)+card('Resultado de los lotes con actividad',table(['Lote','Producto','Ventas','Costo de salidas','Otros gastos','Margen'],lots.map(l=>[l.codigo,l.producto,bs(l.ventas),bs(l.costo),bs(l.gastos),bs(l.resultado)]),'Sin lotes con movimientos o registros financieros en este período.')+'<p>El costo incluye las salidas por merma. Gastos generales sin lote: '+bs(a.generales)+'.</p>')+card('En qué se gastó',table(['Concepto registrado','Actual','Anterior'],conceptos.map(([k,x,y])=>[k,bs(x),bs(y)]),'Sin gastos adicionales registrados en los períodos comparados.'))+card('Motivos registrados en campo',table(['Fecha','Lote','Incidencia','Cantidad','Motivo declarado'],d.hechos.map(h=>[h.fecha,h.lote,h.tipo,fmt(h.cantidad)+' '+h.unidad,h.motivo]),'Sin rechazos ni mermas vigentes registrados en este período.')+'<p>Los motivos provienen de la recepción y del registro de mermas. Para atribuir una caída a la fertilización o a la técnica de cosecha hace falta una observación que lo sustente.</p>')+card('Rendimiento aceptado por parcela',table(['Parcela','Producto','Unidad','Actual','Anterior','Variación'],d.campo.rendimientos.map(r=>[r.parcela,r.producto,r.unidad+'/ha',r.actual==null?'—':fmt(r.actual),r.anterior==null?'—':fmt(r.anterior),r.cambio_pct==null?'Sin base comparable':fmt(r.cambio_pct)+' %']),'Sin cosechas con superficie registrada en estos períodos.')+'<p>Cantidad aceptada dividida entre la suma de hectáreas cosechadas en los cortes registrados. Cada producto y presentación se compara por separado.</p>')+card('Bitácora de campo del período',table(['Fecha','Parcela','Actividad','Descripción','Registro'],d.campo.actividades.map(r=>[r.fecha,r.parcela,r.tipo,r.detalle,r.insumo ? r.insumo+' · '+r.dosis+' '+r.unidad_dosis : r.lote ? r.lote+' · '+r.area_ha+' ha' : '—']),'Sin anotaciones en el período.'))+card('Datos por completar',table(['Lote','Dato pendiente'],d.pendientes.map(l=>[l.codigo,l.motivo]),'Todos los lotes al corte tienen los datos necesarios para calcular su resultado.'))}
-async function load(){const id=++revision;$('msg').textContent='Consultando…';$('report').textContent='';try{let d=await (await api(role==='jefe'?'/direccion/resumen?dias='+$('days').value:'/reportes/diagnostico')).json();if(id!==revision)return;if(role==='jefe')draw(d);else $('report').innerHTML=card('Servicios',table(['Componente','Estado'],d.map(r=>[r.componente,r.estado]),'Sin datos'));$('msg').textContent=''}catch(e){$('msg').textContent=e.message}}
+const tile=(label,value,amount=null)=>'<div>'+label+'<strong class="'+(amount>0?'gain':amount<0?'loss':'')+'">'+value+'</strong></div>';
+function informeDemostracion() {
+  const lotes = [
+    {codigo:'PIÑ-01', producto:'Piña', ventas:160, costo:80, gastos:20, gasto_principal:{concepto:'Transporte',monto:20}, resultado:60},
+    {codigo:'BAN-02', producto:'Banano', ventas:300, costo:280, gastos:60, gasto_principal:{concepto:'Transporte',monto:45}, resultado:-40}
+  ];
+  return {
+    actual:{desde:'2026-10-27',hasta:'2026-11-25',actividad:true,ventas:460,costo:360,gastos:80,resultado:20,generales:0,lotes,conceptos:{Transporte:65,Embalaje:15}},
+    anterior:{desde:'2026-09-27',hasta:'2026-10-26',actividad:true,ventas:500,costo:340,gastos:60,resultado:100,conceptos:{Transporte:50,Embalaje:10}},
+    hechos:[
+      {fecha:'2026-11-07',lote:'PIÑ-01',tipo:'Rechazo',cantidad:8,unidad:'piezas',motivo:'Golpes detectados en recepción'},
+      {fecha:'2026-11-16',lote:'BAN-02',tipo:'Merma',cantidad:2,unidad:'cajas',motivo:'Maduración durante el almacenamiento'}
+    ],
+    campo:{rendimientos:[
+      {parcela:'Chaco Norte · P1',producto:'Piña',unidad:'piezas',actual:920,anterior:800,cambio_pct:15},
+      {parcela:'Chaco Sur · P2',producto:'Banano',unidad:'cajas',actual:100,anterior:125,cambio_pct:-20}
+    ],actividades:[
+      {fecha:'2026-10-29',parcela:'Chaco Norte · P1',tipo:'Abono',detalle:'Aplicación de compost',insumo:'Compost',dosis:25,unidad_dosis:'kg/ha'},
+      {fecha:'2026-11-07',parcela:'Chaco Norte · P1',tipo:'Cosecha',detalle:'92 piñas aceptadas',lote:'PIÑ-01',area_ha:0.1},
+      {fecha:'2026-11-14',parcela:'Chaco Sur · P2',tipo:'Cosecha',detalle:'20 cajas aceptadas',lote:'BAN-02',area_ha:0.2}
+    ]},pendientes:[]
+  };
+}
+function fechaCorta(fecha) {
+  return new Intl.DateTimeFormat('es-BO',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(fecha+'T12:00:00Z'));
+}
+function explicarLote(lote, hechos) {
+  const {ventas, costo, gastos, resultado} = lote;
+  const titulo = resultado == null ? 'No se pudo calcular el resultado' : resultado > 0 ? 'Ganancia: '+bs(resultado) : resultado < 0 ? 'Pérdida: '+bs(Math.abs(resultado)) : 'Ingresos y costos iguales';
+  const frases = [];
+  if (resultado == null) {
+    frases.push('Ventas registradas: '+bs(ventas)+'. Falta registrar el costo de compra para calcular la ganancia o pérdida.');
+  } else {
+    const total = Number(costo) + Number(gastos);
+    const balance = resultado > 0 ? ' superaron en '+bs(resultado) : resultado < 0 ? ' quedaron '+bs(Math.abs(resultado))+' por debajo de' : ' igualaron';
+    frases.push('Las ventas de '+bs(ventas)+balance+' los costos registrados de '+bs(total)+'.');
+    frases.push('El costo de las salidas fue '+bs(costo)+' y los gastos adicionales sumaron '+bs(gastos)+'.');
+  }
+  if(lote.gasto_principal) frases.push('Mayor gasto adicional: '+lote.gasto_principal.concepto+' ('+bs(lote.gasto_principal.monto)+').');
+  for(const h of hechos.filter(h=>h.lote===lote.codigo)){
+    frases.push(h.tipo+' registrado: '+fmt(h.cantidad)+' '+h.unidad+' por '+h.motivo+'.');
+  }
+  return '<section class="'+(resultado<0?'negativa':'')+'"><small>'+esc(lote.codigo)+' · '+esc(lote.producto)+'</small><h3>'+esc(titulo)+'</h3><p>'+esc(frases.join(' '))+'</p></section>';
+}
+function explicarVariacion(actual, anterior) {
+  if(actual.resultado == null || anterior.resultado == null) return 'La comparación requiere un resultado calculado en ambos períodos.';
+  const delta=actual.resultado-anterior.resultado;
+  const frases=[delta===0?'El resultado se mantuvo en '+bs(actual.resultado)+'.':'El resultado '+(delta>0?'subió':'bajó')+' en '+bs(Math.abs(delta))+', de '+bs(anterior.resultado)+' a '+bs(actual.resultado)+'.'];
+  const factores=[['Las ventas','aumentaron','disminuyeron','ventas',1],['El costo de salidas','aumentó','disminuyó','costo',-1],['Los gastos operativos','aumentaron','disminuyeron','gastos',-1]];
+  factores.map(([nombre,sube,baja,k,signo])=>({nombre,sube,baja,cambio:actual[k]-anterior[k],signo}))
+    .filter(x=>x.cambio!==0).sort((x,y)=>Math.abs(y.cambio)-Math.abs(x.cambio))
+    .forEach(x=>frases.push(x.nombre+' '+(x.cambio>0?x.sube:x.baja)+' en '+bs(Math.abs(x.cambio))+', lo que '+(x.cambio*x.signo>0?'mejoró':'redujo')+' el margen.'));
+  return frases.join(' ');
+}
+
+
+function draw(d, demo=false){
+  const a=d.actual, b=d.anterior;
+  const delta=a.resultado!=null && b.resultado!=null ? a.resultado-b.resultado : null;
+  const signed=n=> n==null?'—':(n>0?'+':'')+bs(n);
+  const monto=n=>n==null?'Sin calcular':bs(n);
+  const periodo=p=>fechaCorta(p.desde)+' – '+fechaCorta(p.hasta);
+  const metrics='<div class="tiles">'+tile('Ventas registradas',bs(a.ventas))+tile('Costo de salidas',monto(a.costo))+tile('Gastos operativos',bs(a.gastos))+tile('Resultado neto registrado',monto(a.resultado),a.resultado)+'</div>';
+  const filas=[['Ventas','ventas',1],['Costo de salidas','costo',-1],['Gastos operativos','gastos',-1],['Resultado del período','resultado',1]];
+  const comparativo=table(['Indicador','Período actual','Período anterior','Impacto en el resultado'],filas.map(([nombre,k,sign])=>[nombre,monto(a[k]),monto(b[k]),a.actividad&&b.actividad&&a[k]!=null&&b[k]!=null?signed(sign*(a[k]-b[k])):'—']),'');
+  const lotes=[...a.lotes].sort((x,y)=>(y.resultado??-Infinity)-(x.resultado??-Infinity));
+  const fichas='<div class="casegrid">'+lotes.map(l=>explicarLote(l,d.hechos)).join('')+'</div>';
+  const causas=explicarVariacion(a,b);
+  const conceptos=[...new Set([...Object.keys(a.conceptos),...Object.keys(b.conceptos)])];
+  $('report').innerHTML='<div class="reporthead"><small>'+(demo?'DEMOSTRACIÓN · DOS LOTES':'REGISTROS DE LA EMPRESA')+'</small><h2>Resumen financiero</h2><p>'+periodo(a)+'</p></div>'+metrics+
+    card('Resultado por lote','<p>El administrador registra ventas, costos, gastos e incidencias. El sistema calcula el resultado y redacta el resumen automáticamente.</p>'+fichas+table(['Lote','Producto','Ventas','Costo de salidas','Gastos','Resultado'],lotes.map(l=>[l.codigo,l.producto,bs(l.ventas),monto(l.costo),bs(l.gastos),monto(l.resultado)]),'Sin actividad por lote en este período.')+(a.generales?'<p>Gastos generales sin asignación a lote: '+bs(a.generales)+'.</p>':''))+
+    card('Variación del resultado','<p>Período de referencia: '+periodo(b)+'.</p>'+comparativo+(causas?'<p class="analysis">'+causas+'</p>':''))+
+    card('Distribución del gasto',table(['Concepto','Actual','Anterior'],conceptos.map(k=>[k,bs(a.conceptos[k]||0),bs(b.conceptos[k]||0)]),'Sin gastos registrados.'))+
+    card('Incidencias registradas por el administrador',table(['Fecha','Lote','Tipo','Cantidad','Motivo registrado'],d.hechos.map(h=>[fechaCorta(h.fecha),h.lote,h.tipo,fmt(h.cantidad)+' '+h.unidad,h.motivo]),'Sin incidencias registradas.'))+
+    card('Rendimiento por parcela',table(['Parcela','Producto','Unidad','Actual','Anterior','Variación'],d.campo.rendimientos.map(r=>[r.parcela,r.producto,r.unidad+'/ha',r.actual==null?'—':fmt(r.actual),r.anterior==null?'—':fmt(r.anterior),r.cambio_pct==null?'—':fmt(r.cambio_pct)+' %']),'Sin mediciones para este período.'))+
+    card('Bitácora de campo',table(['Fecha','Parcela','Actividad','Observación','Detalle'],d.campo.actividades.map(r=>[fechaCorta(r.fecha),r.parcela,r.tipo,r.detalle,r.insumo?r.insumo+' · '+r.dosis+' '+r.unidad_dosis:r.lote?r.lote+' · '+r.area_ha+' ha':'—']),'Sin anotaciones para este período.'))+
+    (d.pendientes.length?'<details class="card"><summary>Revisión de costos · '+d.pendientes.length+' lotes</summary>'+table(['Lote','Estado'],d.pendientes.map(l=>[l.codigo,l.motivo]),'')+'</details>':'');
+}
+
+async function load(silencioso=false){const id=++revision;const demo=role==='jefe' && $('source').value==='demo';$('period').hidden=role==='soporte'||demo;$('excel').hidden=demo;$('reload').hidden=demo;if(demo){draw(informeDemostracion(),true);$('msg').textContent='';return;}if(silencioso!==true){$('msg').textContent='Consultando…';$('report').textContent='';}try{let d=await (await api(role==='jefe'?'/direccion/resumen?dias='+$('days').value:'/reportes/diagnostico')).json();if(id!==revision)return;if(role==='jefe')draw(d);else $('report').innerHTML=card('Servicios',table(['Componente','Estado'],d.map(r=>[r.componente,r.estado]),'Sin datos'));$('msg').textContent=role==='jefe'?'Actualizado a las '+new Date().toLocaleTimeString('es-BO')+' · Actualización automática cada 30 s':''}catch(e){if(id===revision || !token)$('msg').textContent=e.message}}
 async function openPanel(){const u=await(await api('/auth/me')).json();if(u.rol!==role){end();throw Error('Esta cuenta no corresponde a este acceso.')} $('login').hidden=true;$('panel').hidden=false;await load()}
 $('login').onsubmit=async e=>{e.preventDefault();try{const data=Object.fromEntries(new FormData(e.target));const r=await(await api('/auth/login',{method:'POST',body:JSON.stringify(data)})).json();if(r.usuario.rol!==role)throw Error('Utiliza el acceso de tu rol desde el centro de accesos.');token=r.access_token;sessionStorage.setItem('consulta_token',token);e.target.reset();await openPanel()}catch(err){$('msg').textContent=err.message}};
 $('excel').onclick=async()=>{try{const r=await api('/reportes/excel/resultado-lotes');const url=URL.createObjectURL(await r.blob());const a=document.createElement('a');a.href=url;a.download='Resultados-acumulados-al-corte.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}catch(e){$('msg').textContent=e.message}};
 $('excel').textContent='Excel acumulado al corte';$('reload').onclick=load;$('days').onchange=load;$('logout').onclick=()=>{end();$('msg').textContent=''};
 if(role==='soporte'){$('title').textContent='Diagnóstico técnico';$('sub').textContent='Estado de los servicios de la instalación.';$('period').hidden=true;$('excel').textContent='Descargar diagnóstico';$('excel').onclick=async()=>{try{const r=await api('/reportes/excel/diagnostico');const u=URL.createObjectURL(await r.blob()),a=document.createElement('a');a.href=u;a.download='diagnostico.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}catch(e){$('msg').textContent=e.message}}}
+$('sourceLabel').hidden=role!=='jefe';$('source').onchange=load;
+function refrescarSiVisible(){if(token && role==='jefe' && !$('panel').hidden && !document.hidden && $('source').value==='real')load(true)}
+setInterval(refrescarSiVisible,30000);
+document.addEventListener('visibilitychange',refrescarSiVisible);
 if(token)openPanel().catch(e=>$('msg').textContent=e.message);
 </script></html>
