@@ -96,15 +96,21 @@ async function actualizarAviso() {
   const revision = ++revisionAviso;
   if (!admin()) { aviso.hidden = true; return; }
   aviso.hidden = false;
+  const contador = $("#contador-solicitudes");
   try {
     const solicitudes = await api("/auth/solicitudes");
     if (revision !== revisionAviso || !admin()) return;
-    aviso.dataset.pending = String(solicitudes.length > 0);
-    aviso.textContent = solicitudes.length ? "Solicitudes pendientes (" + solicitudes.length + ")" : "Sin solicitudes pendientes";
+    const cantidad = solicitudes.length;
+    contador.hidden = cantidad === 0;
+    contador.textContent = cantidad ? String(cantidad) : "";
+    const etiqueta = "Solicitudes de acceso pendientes: " + cantidad;
+    aviso.setAttribute("aria-label", etiqueta);
+    aviso.title = etiqueta;
   } catch {
     if (revision !== revisionAviso || !admin()) return;
-    aviso.dataset.pending = "false";
-    aviso.textContent = "Consultar solicitudes";
+    contador.hidden = true;
+    aviso.setAttribute("aria-label", "Consultar solicitudes de acceso. Recuento no disponible.");
+    aviso.title = "Consultar solicitudes de acceso. Recuento no disponible.";
   }
 }
 setInterval(() => { if (!document.hidden && session?.rol === "admin") actualizarAviso(); }, 30000);
@@ -238,7 +244,7 @@ function chart(semanas, unidad) {
   const maximo = Math.max(1, ...semanas.flatMap((row) => [Number(row.entrada), Number(row.salida)]));
   const rows = semanas.map((row) => {
     const fecha = new Date(row.fecha + "T12:00:00").toLocaleDateString("es-BO", { day: "numeric", month: "short" });
-    const barra = (tipo, valor) => `<div class="chart-series"><div class="chart-track"><span class="chart-fill ${tipo}" style="--fill:${Math.max(0, Math.min(100, Number(valor) / maximo * 100))}%"></span></div><span class="chart-value">${acopio.cantidad(valor, unidad)}</span></div>`;
+    const barra = (tipo, valor) => `<div class="chart-series"><span class="chart-series-label">${tipo === "in" ? "Entrada" : "Salida"}</span><div class="chart-track" aria-hidden="true"><span class="chart-fill ${tipo}" style="--fill:${Math.max(0, Math.min(100, Number(valor) / maximo * 100))}%"></span></div><span class="chart-value">${acopio.cantidad(valor, unidad)}</span></div>`;
     return `<div class="chart-week"><span>${safe(fecha)}</span><div>${barra("in", row.entrada)}${barra("out", row.salida)}</div></div>`;
   }).join("");
   return `<div class="chart-legend"><span class="chart-key in"></span> Entradas <span class="chart-key out"></span> Salidas</div><div class="chart-weeks">${rows}</div>`;

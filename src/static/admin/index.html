@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kardex Agrícola · Administración del acopio</title>
-  <link rel="stylesheet" href="/admin/static/styles.css?v=roles-20261125b">
+  <link rel="stylesheet" href="/admin/static/styles.css?v=cosecha-20261125c">
   <link rel="stylesheet" href="/inicio/static/acopio.css?v=roles-20261125b">
   <script defer src="/inicio/static/acopio.js?v=finca1"></script>
-  <script defer src="/admin/static/app.js?v=2026.11.25.4"></script>
+  <script defer src="/admin/static/app.js?v=2026.11.25.5"></script>
 </head>
 <body>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -58,7 +58,13 @@
           <div class="breadcrumb">Kardex Agrícola <span>/</span> <b id="page-crumb">Resumen</b></div>
           <div class="top-date" id="today-label"></div>
         </div>
-        <button type="button" class="btn btn-soft" id="aviso-solicitudes" data-page="clients" aria-live="polite">Solicitudes de acceso</button>
+        <button type="button" class="notification-bell" id="aviso-solicitudes" data-page="clients"
+                aria-label="Consultar solicitudes de acceso" title="Consultar solicitudes de acceso">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 9h18c0-1-3-2-3-9Z"/><path d="M10 20a2.2 2.2 0 0 0 4 0"/>
+          </svg>
+          <span class="notification-count" id="contador-solicitudes" hidden aria-hidden="true"></span>
+        </button>
       </header>
       <div class="content" id="page-content"></div>
     </main>
