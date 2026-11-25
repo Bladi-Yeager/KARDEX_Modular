@@ -601,3 +601,60 @@ body { font-weight:700; }
   #detalle-existencias .panel {padding:14px}
   .chart-week {grid-template-columns:1fr;gap:2px}
 }
+
+/* Identidad de los módulos y de las acciones en Administración. */
+:root[data-theme="light"] {
+  --resumen:#205fa0; --cosechas:#6a409c; --lotes:#885300; --kardex:#a13757;
+  --secundario:#623b86; --secundario-fondo:#f7f2fc; --peligro:#a02e37; --peligro-fondo:#fff1f1;
+  --exportar:#795000; --exportar-fondo:#fff7e5;
+}
+:root[data-theme="dark"] {
+  --resumen:#a8d3ff; --cosechas:#d5b5ff; --lotes:#ffd089; --kardex:#ffb3c6;
+  --secundario:#e3c5fc; --secundario-fondo:#3d2e49; --peligro:#ffbcc0; --peligro-fondo:#492e35;
+  --exportar:#ffda92; --exportar-fondo:#403421;
+}
+.app-shell {--acento-modulo:var(--indigo)}
+.app-shell:has(.nav-item.active[data-page="dashboard"]) {--acento-modulo:var(--resumen)}
+.app-shell:has(.nav-item.active[data-page="harvests"]) {--acento-modulo:var(--cosechas)}
+.app-shell:has(.nav-item.active[data-page="lots"]) {--acento-modulo:var(--lotes)}
+.app-shell:has(.nav-item.active[data-page="movements"]) {--acento-modulo:var(--kardex)}
+.sidebar .nav-item[data-page="dashboard"] {--rotulo:#a8d3ff}
+.sidebar .nav-item[data-page="harvests"] {--rotulo:#d5b5ff}
+.sidebar .nav-item[data-page="lots"] {--rotulo:#ffd089}
+.sidebar .nav-item[data-page="movements"] {--rotulo:#ffb3c6}
+.sidebar .nav-item:is([data-page="dashboard"],[data-page="harvests"],[data-page="lots"],[data-page="movements"]),
+.sidebar .nav-item:is([data-page="dashboard"],[data-page="harvests"],[data-page="lots"],[data-page="movements"]) .nav-ico {color:var(--rotulo)}
+.sidebar .nav-item.active {border-inline-start-color:var(--rotulo,#c2d3e3)}
+.breadcrumb #page-crumb,.page-head h1 {color:var(--acento-modulo)}
+.btn-primary {color:#fff;background:#255fa5;border:1px solid #255fa5}
+.btn-soft {color:var(--secundario);background:var(--secundario-fondo);border:1px solid currentColor}
+.btn-excel {color:var(--exportar);background:var(--exportar-fondo);border:1px solid currentColor}
+.btn-danger {color:var(--peligro);background:var(--peligro-fondo);border:1px solid currentColor}
+.btn:focus-visible {outline:3px solid var(--blue);outline-offset:3px}
+:root[data-theme="light"] .main-area {background:#fff}
+:root[data-theme="light"] .content :is(.panel,.stat-card) {
+  background:#fff;border:1px solid color-mix(in srgb,var(--acento-modulo) 57%,white);
+  box-shadow:0 2px 9px #25212a09;
+}
+:root[data-theme="light"] #detalle-existencias .overview-grid>.panel {background:#fff;border:1px solid var(--entrada)}
+:root[data-theme="light"] #detalle-existencias .overview-grid>.panel:last-child {border-color:var(--salida)}
+:root[data-theme="light"] #detalle-existencias .product-card {border:1px solid var(--metric)}
+:root[data-theme="light"] .harvest-hero {
+  background-color:white;background-image:linear-gradient(90deg,white 40%,#fffffff2 58%,#ffffff24),url('/inicio/static/img/productor.jpg');
+  border:1px solid var(--resumen);
+}
+:root[data-theme="light"] .harvest-hero h1 {color:var(--resumen)}
+:root[data-theme="light"] .harvest-hero p {color:var(--text)}
+:root[data-theme="dark"] .content>.panel {border-color:color-mix(in srgb,var(--acento-modulo) 45%,var(--panel))}
+@media(max-width:720px) {
+  :root[data-theme="light"] .harvest-hero {background-image:linear-gradient(90deg,#fffffff5,#ffffffe8),url('/inicio/static/img/productor.jpg')}
+}
+.sidebar .nav-item {color:var(--rotulo,#dfd4ed)}
+.sidebar .logout-btn {color:#ffb8c3}
+.theme-toggle,.icon-btn,.copy-btn {color:var(--secundario);border-color:var(--secundario);background:var(--secundario-fondo)}
+:root[data-theme] .theme-toggle {color:var(--secundario)}
+form:is([data-submit="reverse"],[data-submit="reverseFinance"]) .btn-primary {
+  color:var(--peligro);background:var(--peligro-fondo);border:1px solid currentColor;
+}
+#comprobante-recepcion .comprobante-acciones button {color:var(--secundario);background:var(--secundario-fondo);border:1px solid currentColor}
+#comprobante-recepcion .comprobante-acciones button:last-child {color:#fff;background:#255fa5;border-color:#255fa5}
