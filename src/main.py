@@ -3,7 +3,7 @@ from src.modules.inventory.bitacora import router as bitacora_router
 from src.modules.reportes.direccion import router as direccion_router
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.core.database import Base, engine
@@ -101,4 +101,4 @@ def panel_jefe():
 
 @app.get("/soporte", include_in_schema=False)
 def panel_soporte():
-    return FileResponse(STATIC_DIR / "direccion" / "index.html")
+    return RedirectResponse("https://wa.me/59167559408", status_code=307)

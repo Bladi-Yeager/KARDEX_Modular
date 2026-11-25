@@ -18,6 +18,7 @@ const PAGES = {
 };
 const NAV = {
   admin: ["dashboard", "harvests", "journal", "lots", "movements", "products", "finance", "farms", "workers", "clients", "users"],
+  soporte: ["dashboard"],
 };
 
 let session;
@@ -790,7 +791,7 @@ $("#login-form").addEventListener("submit", async (event) => {
       location.assign("/portal/panel");
       return;
     }
-    if (["jefe", "soporte"].includes(data.usuario.rol)) {
+    if (data.usuario.rol === "jefe") {
       sessionStorage.setItem("consulta_token", data.access_token);
       location.replace("/" + data.usuario.rol);
       return;
@@ -815,7 +816,7 @@ $("#login-form").addEventListener("submit", async (event) => {
   if (!token) return;
   try {
     session = await api("/auth/me");
-    if (["jefe", "soporte"].includes(session.rol)) {
+    if (session.rol === "jefe") {
       sessionStorage.setItem("consulta_token", token);
       localStorage.removeItem(TOKEN_KEY);
       location.replace("/" + session.rol);
