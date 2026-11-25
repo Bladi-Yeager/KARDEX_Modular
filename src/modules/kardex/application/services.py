@@ -1,7 +1,7 @@
 from src.modules.kardex.domain.models import Cosecha, Movimiento
 from src.modules.kardex.domain.repositories import CosechaRepository, MovimientoRepository
 from src.modules.kardex.domain.exceptions import CosechaNoEncontrada
-from src.modules.kardex.application.dtos import CosechaCreate, MovimientoCreate
+from src.modules.kardex.application.dtos import CosechaCreate, MovimientoCreate, RecepcionCreate
 
 
 class CosechaService:
@@ -18,44 +18,30 @@ class CosechaService:
         return cosecha
 
     def create(self, data: CosechaCreate) -> Cosecha:
-        cosecha = Cosecha(
-            fecha=data.fecha,
-            cosechero_id=data.cosechero_id,
-            finca_id=data.finca_id,
-            parcela_id=data.parcela_id,
-            tipo_cosecha=data.tipo_cosecha,
-            kg=data.kg,
-            monto_bs=data.monto_bs,
-            observacion=data.observacion,
-        )
-        return self.repository.add(cosecha)
+        return self.repository.add(data)
 
     def total_kg_by_month(self, anio: int, mes: int) -> float:
         return self.repository.total_kg_by_month(anio, mes)
+
+    def editar(self, cosecha_id: int, data: CosechaCreate) -> Cosecha:
+        return self.repository.editar(cosecha_id, data)
+
+    def eliminar(self, cosecha_id: int) -> None:
+        self.repository.eliminar(cosecha_id)
 
 
 class MovimientoService:
     def __init__(self, repository: MovimientoRepository):
         self.repository = repository
 
-    def list_all(self):
-        return self.repository.list_all()
+    def list_all(self, finca_id: int | None = None, lote_id: int | None = None, producto_id: int | None = None):
+        return self.repository.list_all(finca_id, lote_id, producto_id)
 
-    def create(self, data: MovimientoCreate) -> Movimiento:
-        ultimo = self.repository.get_last()
-        saldo_anterior = float(ultimo.saldo_kg) if ultimo else 0
-        saldo = data.saldo_kg
-        if saldo == 0:
-            saldo = saldo_anterior + data.entrada_kg - data.salida_kg
-        movimiento = Movimiento(
-            fecha=data.fecha,
-            detalle=data.detalle,
-            doc=data.doc,
-            lote_id=data.lote_id,
-            finca_id=data.finca_id,
-            entrada_kg=data.entrada_kg,
-            salida_kg=data.salida_kg,
-            saldo_kg=saldo,
-            observacion=data.observacion,
-        )
-        return self.repository.add(movimiento)
+    def create(self, data: MovimientoCreate, usuario_id: int) -> Movimiento:
+        return self.repository.add(data, usuario_id)
+
+    def recibir(self, cosecha_id: int, data: RecepcionCreate, usuario_id: int):
+        return self.repository.recibir(cosecha_id, data, usuario_id)
+
+    def anular(self, movimiento_id: int, motivo: str, usuario_id: int) -> Movimiento:
+        return self.repository.anular(movimiento_id, motivo, usuario_id)

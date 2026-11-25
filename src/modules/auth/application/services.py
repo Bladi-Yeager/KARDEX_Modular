@@ -12,16 +12,16 @@ from src.modules.auth.domain.exceptions import (
     CredencialesInvalidas,
     InvitacionInvalida,
     RolInvalido,
+    SolicitudPendiente,
     UsuarioInactivo,
     UsuarioYaExiste,
 )
-from src.modules.auth.domain.models import ROLES_VALIDOS, Invitacion, Usuario
+from src.modules.auth.domain.models import ROLES_VALIDOS, Invitacion, Usuario, rol_efectivo
 from src.modules.auth.domain.repositories import InvitacionRepository, UsuarioRepository
 from src.modules.auth.infrastructure.external_adapters import PasswordHasher
 from src.modules.auth.infrastructure.tokens import create_access_token
 
 ROLES_CON_INVITACION = ("encargado", "trabajador")
-ROLES_QUE_CREA_ADMIN = ("cliente", "encargado", "trabajador")
 
 
 class AuthService:
@@ -37,6 +37,7 @@ class AuthService:
             password_hash=PasswordHasher.hash(data.password),
             nombre_completo=data.nombre_completo.strip(),
             rol=rol,
+            activo=rol != "pendiente",
         )
         return self.repository.add(usuario)
 
@@ -45,8 +46,8 @@ class AuthService:
 
     # ------------------------------------------------------------------ registros
     def register_cliente(self, data: ClienteRegister) -> Usuario:
-        """Registro libre: SIEMPRE crea un cliente/productor."""
-        return self._crear(data, "cliente")
+        """Reserva el usuario hasta que un administrador apruebe su afiliación."""
+        return self._crear(data, "pendiente")
 
     def register_staff(self, data: StaffRegister, invitacion: Invitacion) -> Usuario:
         """Registro con invitacion: el rol lo manda la invitacion, no el formulario."""
@@ -64,11 +65,16 @@ class AuthService:
             raise AdminYaExiste()
         return self._crear(data, "admin")
 
-    def crear_usuario(self, data) -> Usuario:
-        """El administrador crea una cuenta eligiendo el rol (menos 'admin')."""
+    def crear_usuario(self, data, rol_actor: str) -> Usuario:
         rol = (data.rol or "cliente").strip().lower()
-        if rol not in ROLES_QUE_CREA_ADMIN:
+        permitido = {"jefe": "admin", "admin": "cliente"}.get(rol_actor)
+        if rol != permitido:
             raise RolInvalido(data.rol)
+        return self._crear(data, rol)
+
+    def provisionar(self, data, rol: str) -> Usuario:
+        if rol not in ("jefe", "soporte"):
+            raise RolInvalido(rol)
         return self._crear(data, rol)
 
     # ------------------------------------------------------------------ login
@@ -76,7 +82,10 @@ class AuthService:
         usuario = self.repository.get_by_username(data.username.strip())
         if not usuario or not PasswordHasher.verify(data.password, usuario.password_hash):
             raise CredencialesInvalidas()
-        if not usuario.activo:
+        if usuario.rol == "pendiente":
+            raise SolicitudPendiente()
+        usuario.rol = rol_efectivo(usuario.rol)
+        if not usuario.activo or usuario.rol not in ROLES_VALIDOS:
             raise UsuarioInactivo()
 
         # Si el usuario venia de la version vieja (SHA-256), subimos su hash.
@@ -105,6 +114,7 @@ class InvitacionService:
         invitacion = Invitacion(
             codigo=codigo,
             rol=rol,
+            activo=rol != "pendiente",
             creado_por=creado_por,
             expira_en=datetime.now() + timedelta(days=data.dias_vigencia),
         )

@@ -388,6 +388,20 @@ h1, h2, h3 { margin: 0; font-weight: 700; color: var(--texto); }
 }
 
 .btn-suave:hover { border-color: var(--suave-borde); color: var(--indigo); }
+.btn-excel { border-color:#567b70; color:#b2eed0; }
+.producto-saldos { margin:18px 0 26px; }
+.panel .kpis { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.producto-saldos h2 { font-size:18px; margin:0 0 10px; }
+#producto-saldos-lista { display:grid; grid-template-columns:repeat(auto-fit,minmax(144px,1fr)); gap:10px; }
+.saldo-producto { display:grid; gap:8px; text-align:left; padding:14px; border:1px solid var(--borde); border-top:3px solid #478771; border-radius:12px; color:var(--texto); background:var(--blanco); font:inherit; cursor:pointer; }
+.saldo-producto:nth-child(3n+2) { border-top-color:#bf7045; }
+.saldo-producto:nth-child(3n+3) { border-top-color:var(--violeta); }
+.saldo-producto strong { font-size:20px; }
+.saldo-producto small { color:var(--gris); }
+.campo select { min-height:38px; width:100%; max-width:240px; padding:6px 9px; color:var(--texto); background:var(--blanco); border:1px solid var(--borde); border-radius:8px; }
+#tabla-titulo { scroll-margin-top:145px; }
+:root[data-theme="light"] .btn-excel { background:#e5f1e8; color:#20543e; }
+@media print { .btn-excel { display:none !important; } }
 
 .usuario { display: flex; align-items: center; gap: 12px; }
 
@@ -665,14 +679,21 @@ h1, h2, h3 { margin: 0; font-weight: 700; color: var(--texto); }
 
 @media (max-width: 640px) {
   .topbar { padding: 10px 14px; flex-wrap: wrap; }
+  .topbar-acciones { width:100%; gap:7px; flex-wrap:wrap; }
+  .topbar-acciones .btn-suave { padding:8px 9px; font-size:12px; }
+  .topbar-acciones .badge-solo-lectura { padding:5px 8px; white-space:nowrap; font-size:10px; }
+  .topbar-acciones .usuario { margin-left:auto; }
   .usuario-nombre { display: none; }
   .panel { padding: 20px 14px 50px; }
   .bienvenida h1 { font-size: 22px; }
   .kpis { grid-template-columns: 1fr; }
+  .panel .kpis { grid-template-columns:1fr; }
   .kpi-valor { font-size: 23px; }
   .bienvenida-fecha { text-align: left; }
   .campo input { min-width: 0; width: 100%; }
   .campo { flex: 1 1 140px; }
+  .secciones { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .seccion { white-space:normal; padding:10px 8px; text-align:center; }
   .auth-body .tema-btn { top: 12px; right: 12px; }
 }
 
@@ -706,3 +727,6 @@ h1, h2, h3 { margin: 0; font-weight: 700; color: var(--texto); }
   .badge-solo-lectura { display: inline-block; }
   .bienvenida h1, .form h2 { color: #161c33; -webkit-text-fill-color: #161c33; background: none; }
 }
+
+.soporte-portal { padding: 1rem; text-align: center; }
+.soporte-portal a { color: inherit; text-decoration: underline; }

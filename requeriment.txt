@@ -5,3 +5,4 @@ pymysql
 pydantic-settings
 bcrypt
 PyJWT
+openpyxl>=3.1,<4

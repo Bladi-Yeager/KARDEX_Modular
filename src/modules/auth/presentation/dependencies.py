@@ -6,7 +6,9 @@ import jwt
 
 from src.core.database import get_db
 from src.modules.auth.infrastructure.repository_impl import UsuarioRepositoryImpl
+from src.modules.auth.infrastructure.models_db import UsuarioDB
 from src.modules.auth.infrastructure.tokens import decode_token
+from src.modules.auth.domain.models import ROLES_VALIDOS, rol_efectivo
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -24,23 +26,27 @@ def get_current_user(
         )
     try:
         payload = decode_token(credentials.credentials)
+        usuario_id = int(payload.get("sub", 0))
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="La sesion vencio. Vuelve a iniciar sesion.",
         )
-    except jwt.PyJWTError:
+    except (jwt.PyJWTError, ValueError, TypeError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token invalido.",
         )
 
-    usuario = UsuarioRepositoryImpl(db).get_by_id(int(payload.get("sub", 0)))
+    usuario = UsuarioRepositoryImpl(db).get_by_id(usuario_id)
     if usuario is None or not usuario.activo:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="El usuario no existe o esta inactivo.",
         )
+    usuario.rol = rol_efectivo(usuario.rol)
+    if usuario.rol not in ROLES_VALIDOS:
+        raise HTTPException(status_code=403, detail="El perfil requiere actualización.")
     return usuario
 
 
@@ -56,3 +62,10 @@ def require_roles(*roles: str):
         return usuario
 
     return checker
+
+
+def validar_productor(db: Session, usuario_id: int | None):
+    if usuario_id is not None:
+        usuario = db.get(UsuarioDB, usuario_id)
+        if usuario is None or not usuario.activo or rol_efectivo(usuario.rol) != "cliente":
+            raise HTTPException(422, "Selecciona una cuenta de productor activa.")

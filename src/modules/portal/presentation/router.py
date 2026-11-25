@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import Field
 from sqlalchemy.orm import Session
 
 from src.core.database import get_db
 from src.modules.auth.infrastructure.repository_impl import UsuarioRepositoryImpl
+from src.modules.auth.presentation.dependencies import validar_productor
 from src.modules.auth.presentation.dependencies import get_current_user, require_roles
 from src.modules.inventory.application.dtos import FincaAsignar, FincaOut
 from src.modules.inventory.application.services import FincaService
@@ -21,8 +23,11 @@ from src.modules.portal.infrastructure.repository_impl import PortalRepositoryIm
 
 router = APIRouter(prefix="/portal/api", tags=["portal del productor"])
 
-# El productor (cliente) entra aqui. El admin tambien puede revisar.
-puede_ver_portal = require_roles("cliente", "admin")
+puede_ver_portal = require_roles("cliente")
+
+
+class AsignacionPortal(FincaAsignar):
+    finca_id: int = Field(gt=0)
 
 
 def get_portal_service(db: Session = Depends(get_db)) -> PortalService:
@@ -84,18 +89,14 @@ def listar_clientes(
 
 @router.post("/admin/asignar-finca", response_model=FincaOut)
 def asignar_finca(
-    data: dict,
+    data: AsignacionPortal,
     db: Session = Depends(get_db),
     _admin=Depends(require_roles("admin")),
 ):
     """Asigna una finca a un cliente. Cuerpo: {"finca_id": 1, "usuario_id": 2}."""
-    finca_id = data.get("finca_id")
-    usuario_id = data.get("usuario_id")
-    if not finca_id:
-        raise HTTPException(status_code=400, detail="Falta finca_id")
-
+    validar_productor(db, data.usuario_id)
     servicio = FincaService(FincaRepositoryImpl(db))
     try:
-        return servicio.asignar_usuario(int(finca_id), usuario_id)
+        return servicio.asignar_usuario(data.finca_id, data.usuario_id)
     except FincaNoEncontrada as e:
         raise HTTPException(status_code=404, detail=str(e))

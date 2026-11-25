@@ -1,106 +1,57 @@
 <!doctype html>
-<html lang="es" data-theme="dark">
+<html lang="es" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1024">
-  <title>Kardex Agrícola · Panel de administración</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111a35'/%3E%3Cpath d='M20 46V18h6v12l12-12h8L32 32l14 14h-8L26 34v12z' fill='%23818cf8'/%3E%3C/svg%3E">
+  <title>Kardex Agrícola · Panel interno</title>
   <link rel="stylesheet" href="/admin/static/styles.css">
+  <link rel="stylesheet" href="/inicio/static/acopio.css">
+  <script defer src="/inicio/static/acopio.js"></script>
+  <script defer src="/admin/static/app.js"></script>
 </head>
 <body>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-  <button id="theme-toggle" class="theme-toggle" type="button" title="Cambiar entre modo oscuro y claro" aria-label="Cambiar tema">
-    <span class="theme-ico theme-ico-sun" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-    </span>
-    <span class="theme-ico theme-ico-moon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></svg>
-    </span>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Cambiar tema">
+    <span class="theme-ico theme-ico-sun" aria-hidden="true">☀</span>
+    <span class="theme-ico theme-ico-moon" aria-hidden="true">☾</span>
   </button>
 
-  <!-- ===================== LOGIN ===================== -->
   <section id="auth-screen" class="auth-layout">
     <div class="auth-visual">
-      <div class="brand brand-light"><span class="brand-mark">K</span><span>KARDEX<span class="brand-muted"> AGRÍCOLA</span></span></div>
-
+      <a class="brand brand-light" href="/"><span class="brand-mark" aria-hidden="true">K</span>Kardex Agrícola</a>
       <div class="auth-message">
-        <span class="eyebrow">GESTIÓN AGRÍCOLA INTELIGENTE</span>
-        <h1>Del campo<br><span class="grad">al control.</span></h1>
-        <p>Centraliza cosechas, lotes y movimientos de inventario en una sola plataforma.</p>
-        <div class="visual-stats">
-          <div><strong class="c1">01</strong><span>Producción</span></div>
-          <div><strong class="c2">02</strong><span>Inventario</span></div>
-          <div><strong class="c3">03</strong><span>Trazabilidad</span></div>
-        </div>
+        <h1>De la cosecha<br>al almacén.</h1>
+        <p>Consulta el origen de cada lote, registra sus movimientos y verifica cuánto queda.</p>
       </div>
-
-      <div class="auth-footer">Plataforma de gestión y control · Panel de administración</div>
     </div>
-
     <div class="auth-panel">
-      <div class="auth-mobile-brand brand"><span class="brand-mark">K</span><span>KARDEX AGRÍCOLA</span></div>
-
-      <div class="auth-card">
-        <div class="auth-tabs">
-          <button class="tab active" data-auth-tab="login" type="button">Iniciar sesión</button>
-          <button class="tab" data-auth-tab="invite" type="button">Tengo un código</button>
-        </div>
-
-        <!-- LOGIN -->
-        <div id="login-form-wrap">
-          <span class="eyebrow">BIENVENIDO DE NUEVO</span>
-          <h2>Inicia sesión</h2>
-          <p class="muted">Ingresa tus credenciales para acceder a tu espacio de trabajo.</p>
-          <form id="login-form" class="form-stack">
-            <label>Usuario<input name="username" autocomplete="username" placeholder="Tu nombre de usuario" required></label>
-            <label>Contraseña<input name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña" required></label>
-            <button class="btn btn-primary btn-full" type="submit">Entrar al sistema <span>→</span></button>
-          </form>
-          <p class="auth-help">¿Eres productor? <a href="/portal">Entra al portal del productor</a>.</p>
-        </div>
-
-        <!-- INVITACION -->
-        <div id="invite-form-wrap" class="hidden">
-          <span class="eyebrow">NUEVO ACCESO DE PERSONAL</span>
-          <h2>Activa tu cuenta</h2>
-          <p class="muted">Encargados y trabajadores necesitan un código de invitación válido.</p>
-          <form id="invite-form" class="form-stack">
-            <label>Nombre completo<input name="nombre_completo" placeholder="Ej. Juan Pérez" required maxlength="100"></label>
-            <label>Nombre de usuario<input name="username" placeholder="Elige un usuario" required maxlength="50"></label>
-            <label>Contraseña<input name="password" type="password" placeholder="Mínimo 6 caracteres" minlength="6" required></label>
-            <label>Código de invitación<input name="codigo_invitacion" placeholder="Ej. KX-1A2B3C4D" required maxlength="40"></label>
-            <div class="notice">El código lo entrega el administrador y solo sirve una vez. El rol se asigna automáticamente según el código.</div>
-            <button class="btn btn-primary btn-full" type="submit">Crear mi cuenta <span>→</span></button>
-          </form>
-          <p class="auth-help">¿Eres productor? <a href="/portal">Regístrate en el portal del productor</a>.</p>
-        </div>
-
-        <div class="auth-bottom">¿Necesitas ayuda? Contacta al administrador del sistema.</div>
-      </div>
+      <div class="auth-mobile-brand brand"><span class="brand-mark" aria-hidden="true">K</span>Kardex Agrícola</div>
+      <section class="auth-card">
+        <h2>Panel interno</h2>
+        <p class="muted">Ingresa con tu cuenta de jefe, administrador o soporte.</p>
+        <form id="login-form" class="form-stack">
+          <label>Usuario<input name="username" autocomplete="username" required></label>
+          <label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
+          <button class="btn btn-primary btn-full" type="submit">Iniciar sesión</button>
+        </form>
+        <p class="auth-help">¿Eres productor? <a href="/portal">Entra al portal del productor</a>.</p>
+      </section>
     </div>
   </section>
 
-  <!-- ===================== PANEL ===================== -->
   <div id="app-shell" class="app-shell hidden">
     <aside class="sidebar" id="sidebar">
-      <div class="brand brand-light"><span class="brand-mark">K</span><span>KARDEX<span class="brand-muted"> AGRÍCOLA</span></span></div>
-      <div class="side-label">ESPACIO DE TRABAJO</div>
-      <nav id="side-nav"></nav>
+      <a href="/" class="brand brand-light"><span class="brand-mark" aria-hidden="true">K</span>Kardex Agrícola</a>
+      <button hidden type="button" class="btn btn-soft" id="aviso-solicitudes" data-page="clients" aria-live="polite"></button>
+      <nav id="side-nav" aria-label="Panel interno"></nav>
       <div class="sidebar-bottom">
         <div class="profile-mini">
-          <div class="avatar" id="user-avatar">U</div>
-          <div><strong id="side-user">Usuario</strong><small id="side-role">Perfil</small></div>
+          <div class="avatar" id="user-avatar" aria-hidden="true"></div>
+          <div><strong id="side-user"></strong><small id="side-role"></small></div>
         </div>
-        <div class="sidebar-links">
-          <a href="/" title="Volver al centro de accesos">⌂ Centro de accesos</a>
-          <a href="/portal" title="Abrir el portal del productor">◈ Portal del productor</a>
-        </div>
-        <button id="logout-btn" class="logout-btn" type="button">↪ <span>Cerrar sesión</span></button>
+        <button id="logout-btn" class="logout-btn" type="button">Cerrar sesión</button>
       </div>
     </aside>
-
     <main class="main-area">
       <header class="topbar">
         <button id="menu-toggle" class="icon-btn mobile-only" aria-label="Abrir menú" type="button">☰</button>
@@ -108,18 +59,16 @@
           <div class="breadcrumb">Kardex Agrícola <span>/</span> <b id="page-crumb">Resumen</b></div>
           <div class="top-date" id="today-label"></div>
         </div>
-        <div class="top-actions">
-          <span class="status-dot"></span><span class="status-text">Sistema conectado</span>
-          <div class="avatar avatar-top" id="top-avatar">U</div>
-        </div>
       </header>
-
       <div class="content" id="page-content"></div>
-
-      <footer class="main-footer">Kardex Agrícola <span>·</span> Gestión de producción e inventario</footer>
     </main>
   </div>
-
-  <script src="/admin/static/app.js"></script>
+  <dialog id="action-dialog" class="action-dialog" aria-labelledby="dialog-title">
+    <div class="panel-head">
+      <h3 id="dialog-title"></h3>
+      <button class="btn btn-soft" id="dialog-close" type="button" aria-label="Cerrar diálogo">Cerrar</button>
+    </div>
+    <div id="dialog-content"></div>
+  </dialog>
 </body>
 </html>

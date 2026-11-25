@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from src.core.database import get_db
-from src.modules.auth.presentation.dependencies import get_current_user, require_roles
+from src.modules.auth.presentation.dependencies import require_roles
 from src.modules.supliers.application.dtos import CosecheroCreate, CosecheroOut
 from src.modules.supliers.application.services import CosecheroService
 from src.modules.supliers.infrastructure.repository_impl import CosecheroRepositoryImpl
@@ -9,7 +9,8 @@ from src.modules.supliers.domain.exceptions import CosecheroNoEncontrado
 
 router = APIRouter(prefix="/cosecheros", tags=["cosecheros"])
 
-puede_escribir = require_roles("admin", "encargado")
+puede_leer = require_roles("admin")
+puede_escribir = require_roles("admin")
 
 
 def get_service(db: Session = Depends(get_db)) -> CosecheroService:
@@ -19,7 +20,7 @@ def get_service(db: Session = Depends(get_db)) -> CosecheroService:
 @router.get("", response_model=list[CosecheroOut])
 def listar(
     service: CosecheroService = Depends(get_service),
-    _user=Depends(get_current_user),
+    _user=Depends(puede_leer),
 ):
     return service.list_all()
 
@@ -28,7 +29,7 @@ def listar(
 def obtener(
     cosechero_id: int,
     service: CosecheroService = Depends(get_service),
-    _user=Depends(get_current_user),
+    _user=Depends(puede_leer),
 ):
     try:
         return service.get_by_id(cosechero_id)

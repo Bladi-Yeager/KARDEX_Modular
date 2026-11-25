@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DECIMAL, Date, ForeignKey
+from sqlalchemy import Boolean, Column, Integer, String, DECIMAL, Date, ForeignKey, false
 from src.core.database import Base
 
 
@@ -14,6 +14,22 @@ class CosechaDB(Base):
     kg = Column(DECIMAL(12, 3), nullable=False)
     monto_bs = Column(DECIMAL(12, 2), nullable=False, default=0)
     observacion = Column(String(200), nullable=True)
+    borrador = Column(Boolean, nullable=False, server_default=false())
+    producto_id = Column(Integer, ForeignKey("productos.id"), nullable=True, index=True)
+    cantidad = Column(DECIMAL(12, 3), nullable=True)
+    recibida = Column(DECIMAL(12, 3), nullable=True)
+    rechazada = Column(DECIMAL(12, 3), nullable=True)
+    motivo_rechazo = Column(String(200), nullable=True)
+    cantidad_secundaria = Column(DECIMAL(12, 3), nullable=True)
+    unidad_secundaria = Column(String(10), nullable=True)
+    documento_recepcion = Column(String(30), nullable=True)
+
+
+class ControlKardexDB(Base):
+    __tablename__ = "kardex_control"
+
+    id = Column(Integer, primary_key=True, autoincrement=False)
+    revision = Column(Integer, nullable=False, default=0)
 
 
 class MovimientoDB(Base):
@@ -29,3 +45,8 @@ class MovimientoDB(Base):
     salida_kg = Column(DECIMAL(12, 3), nullable=False, default=0)
     saldo_kg = Column(DECIMAL(12, 3), nullable=False, default=0)
     observacion = Column(String(200), nullable=True)
+    anula_movimiento_id = Column(Integer, ForeignKey("kardex_movimientos.id"), unique=True, nullable=True)
+    registrado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    cantidad_entrada = Column(DECIMAL(12, 3), nullable=True)
+    cantidad_salida = Column(DECIMAL(12, 3), nullable=True)
+    tipo = Column(String(12), nullable=True)

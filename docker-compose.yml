@@ -4,12 +4,12 @@ services:
     container_name: mysql_kardex_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: tu_password_root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?define MYSQL_ROOT_PASSWORD en .env}
       MYSQL_DATABASE: db_kardex
       MYSQL_USER: grupo3
-      MYSQL_PASSWORD: ciego123
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?define MYSQL_PASSWORD en .env}
     ports:
-      - "33061:3306"
+      - "127.0.0.1:33061:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -18,14 +18,15 @@ services:
 
   phpmyadmin:
     image: phpmyadmin:5
+    profiles: ["diagnostico"]
     container_name: phpmyadmin_kardex
     restart: always
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
-      MYSQL_ROOT_PASSWORD: tu_password_root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?define MYSQL_ROOT_PASSWORD en .env}
     depends_on:
       - db
     networks:
@@ -38,9 +39,10 @@ services:
     ports:
       - "8001:8000"
     environment:
-      - DATABASE_URL=mysql+pymysql://grupo3:ciego123@db:3306/db_kardex
-      - SECRET_KEY=${SECRET_KEY:-cambia-esta-clave-por-una-larga-y-secreta-kardex-2026}
+      - DATABASE_URL=mysql+pymysql://grupo3:${MYSQL_PASSWORD:?define MYSQL_PASSWORD en .env}@db:3306/db_kardex
+      - SECRET_KEY=${SECRET_KEY:-}
       - TOKEN_EXPIRE_MINUTES=${TOKEN_EXPIRE_MINUTES:-480}
+      - DEMO_DATA=${DEMO_DATA:-false}
     depends_on:
       - db
     networks:

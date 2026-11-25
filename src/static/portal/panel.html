@@ -16,6 +16,8 @@
     document.documentElement.setAttribute("data-theme", t);
   })();
 </script>
+  <link rel="stylesheet" href="/inicio/static/acopio.css">
+  <script defer src="/inicio/static/acopio.js"></script>
 </head>
 <body class="panel-body">
 
@@ -35,6 +37,7 @@
     </button>
     <span class="badge-solo-lectura">Solo lectura</span>
     <button class="btn-suave" id="btn-imprimir" title="Imprimir o guardar como PDF">Imprimir</button>
+    <button class="btn-suave btn-excel" id="btn-excel" type="button">Descargar Excel</button>
     <div class="usuario">
       <span class="usuario-nombre" id="usuario-nombre">—</span>
       <button class="btn-salir" id="btn-salir">Salir</button>
@@ -58,38 +61,38 @@
 
   <!-- Aviso si no tiene datos -->
   <div class="aviso oculto" id="aviso-sin-datos">
-    <strong>Aún no tienes fincas asignadas.</strong>
-    <span>Pide al administrador que asocie tus fincas a tu cuenta para poder ver tu Kardex.</span>
+    <strong>Aún no tienes chacos asignados.</strong>
+    <span>Pide al administrador que vincule tus chacos a tu cuenta para consultar tu Kardex.</span>
   </div>
 
   <!-- Indicadores -->
   <section class="kpis">
     <article class="kpi">
-      <span class="kpi-etiqueta">Mis fincas</span>
+      <span class="kpi-etiqueta">Mis chacos</span>
       <strong class="kpi-valor" id="kpi-fincas">0</strong>
       <span class="kpi-pie" id="kpi-hectareas">0 ha en total</span>
     </article>
     <article class="kpi">
-      <span class="kpi-etiqueta">Hoja cosechada</span>
-      <strong class="kpi-valor" id="kpi-kg">0 kg</strong>
-      <span class="kpi-pie" id="kpi-cosechas">0 cosechas registradas</span>
+      <span class="kpi-etiqueta">Mis entregas</span>
+      <strong class="kpi-valor" id="kpi-cosechas">0</strong>
+      <span class="kpi-pie">Recepciones registradas</span>
     </article>
     <article class="kpi">
-      <span class="kpi-etiqueta">Monto pagado</span>
+      <span class="kpi-etiqueta">Monto registrado</span>
       <strong class="kpi-valor" id="kpi-monto">Bs 0</strong>
       <span class="kpi-pie">Según tus cosechas</span>
     </article>
-    <article class="kpi kpi-destacado">
-      <span class="kpi-etiqueta">Saldo en almacén</span>
-      <strong class="kpi-valor" id="kpi-saldo">0 kg</strong>
-      <span class="kpi-pie" id="kpi-movimientos">Entradas 0 · Salidas 0</span>
-    </article>
+  </section>
+
+  <section id="producto-saldos" class="producto-saldos oculto" aria-labelledby="producto-saldos-titulo">
+    <h2 id="producto-saldos-titulo">Saldo por producto</h2>
+    <div id="producto-saldos-lista"></div>
   </section>
 
   <!-- Pestañas -->
   <nav class="secciones" id="secciones">
-    <button class="seccion activo" data-vista="fincas">Mis fincas</button>
-    <button class="seccion" data-vista="cosechas">Mis cosechas</button>
+    <button class="seccion activo" data-vista="fincas">Mis chacos</button>
+    <button class="seccion" data-vista="cosechas">Mis entregas</button>
     <button class="seccion" data-vista="kardex">Mi Kardex</button>
     <button class="seccion" data-vista="lotes">Mis lotes</button>
   </nav>
@@ -97,8 +100,12 @@
   <!-- Barra de filtros -->
   <section class="filtros" id="filtros">
     <div class="campo">
+      <label for="filtro-producto">Producto</label>
+      <select id="filtro-producto"><option value="">Todos los productos</option></select>
+    </div>
+    <div class="campo">
       <label for="filtro-texto">Buscar</label>
-      <input type="search" id="filtro-texto" placeholder="Escribe para filtrar...">
+      <input type="search" id="filtro-texto" maxlength="160" placeholder="Escribe para filtrar...">
     </div>
     <div class="campo">
       <label for="filtro-desde">Desde</label>
@@ -114,7 +121,7 @@
   <!-- Vistas -->
   <section class="tabla-caja">
     <div class="tabla-encabezado">
-      <h2 id="tabla-titulo">Mis fincas</h2>
+      <h2 id="tabla-titulo">Mis chacos</h2>
       <span class="muted" id="tabla-conteo"></span>
     </div>
 
@@ -132,8 +139,9 @@
 
   <p class="nota-pie">
     Esta pantalla es de <strong>solo lectura</strong>. Si algún dato no es correcto,
-    comunícate con el encargado de tu finca.
+    comunícate con el encargado del acopio.
   </p>
+<p class="soporte-portal"><a href="https://wa.me/59167559408" target="_blank" rel="noopener noreferrer">Soporte por WhatsApp · +591 67559408</a></p>
 </main>
 
 <script>
@@ -150,7 +158,6 @@ let vistaActual = "fincas";
 const fmtNum = (n, dec = 2) =>
   Number(n || 0).toLocaleString("es-BO", { minimumFractionDigits: dec, maximumFractionDigits: dec });
 
-const fmtKg = (n) => fmtNum(n, 2) + " kg";
 const fmtBs = (n) => "Bs " + fmtNum(n, 2);
 
 function fmtFecha(valor) {
@@ -199,6 +206,7 @@ document.querySelectorAll(".seccion").forEach(btn => {
     document.getElementById("filtro-texto").value = "";
     document.getElementById("filtro-desde").value = "";
     document.getElementById("filtro-hasta").value = "";
+    document.getElementById("filtro-producto").value = "";
     render();
   });
 });
@@ -206,32 +214,31 @@ document.querySelectorAll(".seccion").forEach(btn => {
 document.getElementById("filtro-texto").addEventListener("input", render);
 document.getElementById("filtro-desde").addEventListener("change", render);
 document.getElementById("filtro-hasta").addEventListener("change", render);
+document.getElementById("filtro-producto").addEventListener("change", render);
 document.getElementById("btn-limpiar").addEventListener("click", () => {
   document.getElementById("filtro-texto").value = "";
   document.getElementById("filtro-desde").value = "";
   document.getElementById("filtro-hasta").value = "";
+  document.getElementById("filtro-producto").value = "";
   render();
 });
 
 /* ---------------------------------------------------------- render */
 function aplicarFiltros(filas, campos) {
-  const texto = document.getElementById("filtro-texto").value.trim().toLowerCase();
+  const normalizar = (texto) => texto.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+  const texto = normalizar(document.getElementById("filtro-texto").value.trim());
   const desde = document.getElementById("filtro-desde").value;
   const hasta = document.getElementById("filtro-hasta").value;
+  const producto = document.getElementById("filtro-producto").value;
 
   return filas.filter(fila => {
+    if (producto && Number(producto) !== (fila.producto_id ?? 0)) return false;
     if (texto) {
-      const contenido = campos.map(c => fila[c]).join(" ").toLowerCase();
+      const contenido = normalizar(campos.map(c => fila[c]).join(" "));
       if (!contenido.includes(texto)) return false;
     }
-    if (fila.fecha) {
-      if (desde && fila.fecha < desde) return false;
-      if (hasta && fila.fecha > hasta) return false;
-    }
-    if (fila.fecha_ingreso) {
-      if (desde && fila.fecha_ingreso < desde) return false;
-      if (hasta && fila.fecha_ingreso > hasta) return false;
-    }
+    const fecha = fila.fecha_recepcion || fila.fecha || fila.fecha_ingreso;
+    if (fecha && ((desde && fecha < desde) || (hasta && fecha > hasta))) return false;
     return true;
   });
 }
@@ -259,7 +266,7 @@ function render() {
   if (vistaActual === "fincas") {
     filtros.classList.add("oculto");
     const filas = datos.fincas;
-    pintarTabla("Mis fincas", [
+    pintarTabla("Mis chacos", [
       { titulo: "N°", render: f => esc(f.numero) },
       { titulo: "Nombre", render: f => esc(f.nombre || "—") },
       { titulo: "Ubicación", render: f => esc(f.ubicacion || "—") },
@@ -272,40 +279,43 @@ function render() {
   filtros.classList.remove("oculto");
 
   if (vistaActual === "cosechas") {
-    const filas = aplicarFiltros(datos.cosechas, ["finca", "parcela", "cosechero", "tipo_cosecha", "observacion"]);
-    pintarTabla("Mis cosechas", [
-      { titulo: "Fecha", render: f => fmtFecha(f.fecha) },
-      { titulo: "Finca", render: f => esc(f.finca || "—") },
-      { titulo: "Parcela", render: f => esc(f.parcela || "—") },
-      { titulo: "Cosechero", render: f => esc(f.cosechero || "—") },
-      { titulo: "Tipo", render: f => esc(f.tipo_cosecha) },
-      { titulo: "Kilos", render: f => `<span class="num">${fmtNum(f.kg, 2)}</span>` },
-      { titulo: "Monto (Bs)", render: f => `<span class="num">${fmtNum(f.monto_bs, 2)}</span>` }
+    const filas = aplicarFiltros(datos.cosechas, ["finca", "parcela", "cosechero", "producto", "observacion"]);
+    pintarTabla("Mis entregas", [
+      { titulo: "Fecha", render: f => fmtFecha(f.fecha_recepcion || f.fecha) },
+      { titulo: "Chaco", render: f => esc(f.finca || "—") },
+      { titulo: "Producto", render: f => esc(f.producto) },
+      { titulo: "Cantidad registrada", render: f => acopio.cantidad(f.cantidad, f.unidad) },
+      { titulo: "Rechazada", render: f => acopio.cantidad(f.rechazada, f.unidad) },
+      { titulo: "Monto (Bs)", render: f => `<span class="num">${fmtNum(f.monto_bs, 2)}</span>` },
+      { titulo: "Comprobante", render: f => f.recibida == null ? "—" :
+        `<button class="btn-suave" type="button" data-recibo="${f.id}">Ver comprobante</button>` }
     ], filas);
     return;
   }
 
   if (vistaActual === "kardex") {
-    const filas = aplicarFiltros(datos.kardex, ["detalle", "doc", "lote", "finca", "observacion"]);
+    const filas = aplicarFiltros(datos.kardex, ["detalle", "doc", "lote", "finca", "producto", "observacion"]);
     pintarTabla("Mi Kardex (movimientos del almacén)", [
       { titulo: "Fecha", render: f => fmtFecha(f.fecha) },
       { titulo: "Detalle", render: f => esc(f.detalle) },
-      { titulo: "Documento", render: f => esc(f.doc || "—") },
+      { titulo: "Producto", render: f => esc(f.producto) },
       { titulo: "Lote", render: f => esc(f.lote || "—") },
-      { titulo: "Entrada", render: f => `<span class="num entrada">${fmtNum(f.entrada_kg, 2)}</span>` },
-      { titulo: "Salida", render: f => `<span class="num salida">${fmtNum(f.salida_kg, 2)}</span>` },
-      { titulo: "Saldo", render: f => `<span class="num saldo">${fmtNum(f.saldo_kg, 2)}</span>` }
+      { titulo: "Entrada", render: f => `<span class="num entrada">${acopio.cantidad(f.cantidad_entrada, f.unidad)}</span>` },
+      { titulo: "Salida", render: f => `<span class="num salida">${acopio.cantidad(f.cantidad_salida, f.unidad)}</span>` },
+      { titulo: "Saldo", render: f => `<span class="num saldo">${acopio.cantidad(f.cantidad_saldo, f.unidad)}</span>` }
     ], filas);
     return;
   }
 
   if (vistaActual === "lotes") {
-    const filas = aplicarFiltros(datos.lotes, ["codigo", "finca", "detalle"]);
+    const filas = aplicarFiltros(datos.lotes, ["codigo", "finca", "producto", "detalle"]);
     pintarTabla("Mis lotes", [
       { titulo: "Código", render: f => esc(f.codigo) },
-      { titulo: "Finca", render: f => esc(f.finca || "—") },
+      { titulo: "Chaco", render: f => esc(f.finca || "—") },
+      { titulo: "Producto", render: f => esc(f.producto) },
       { titulo: "Fecha de ingreso", render: f => fmtFecha(f.fecha_ingreso) },
-      { titulo: "Detalle", render: f => esc(f.detalle || "—") }
+      { titulo: "Detalle", render: f => esc(f.detalle || "—") },
+      { titulo: "Cosecha de origen", render: f => f.cosecha_id ? "#" + esc(f.cosecha_id) : "—" }
     ], filas);
   }
 }
@@ -317,20 +327,42 @@ function pintarResumen(r) {
 
   document.getElementById("kpi-fincas").textContent = r.fincas;
   document.getElementById("kpi-hectareas").textContent = fmtNum(r.hectareas, 2) + " ha en total";
-  document.getElementById("kpi-kg").textContent = fmtKg(r.total_kg);
-  document.getElementById("kpi-cosechas").textContent =
-    r.total_cosechas + (r.total_cosechas === 1 ? " cosecha registrada" : " cosechas registradas");
+  document.getElementById("kpi-cosechas").textContent = r.total_cosechas;
   document.getElementById("kpi-monto").textContent = fmtBs(r.total_monto_bs);
-  document.getElementById("kpi-saldo").textContent = fmtKg(r.saldo_kg);
-  document.getElementById("kpi-movimientos").textContent =
-    "Entradas " + fmtNum(r.entradas_kg, 2) + " · Salidas " + fmtNum(r.salidas_kg, 2);
+  const lista = document.getElementById("producto-saldos-lista");
+  lista.innerHTML = r.existencias.map(p =>
+    `<button class="saldo-producto" data-saldo-producto="${p.producto_id ?? 0}" type="button">
+      <span>${esc(p.producto)}</span><strong>${acopio.cantidad(p.saldo, p.unidad)}</strong><small>Ver movimientos</small>
+    </button>`).join("");
+  document.getElementById("producto-saldos").classList.toggle("oculto", !r.existencias.length);
+  const filtro = document.getElementById("filtro-producto");
+  const productos = new Map([...datos.lotes, ...datos.cosechas, ...datos.kardex]
+    .map(row => [row.producto_id ?? 0, row.producto + " · " + acopio.etiqueta(row.unidad)]));
+  filtro.replaceChildren(new Option("Todos los productos", ""));
+  for (const [id, etiqueta] of productos) filtro.append(new Option(etiqueta, id));
   document.getElementById("ultima-actividad").textContent = fmtFecha(r.ultima_actividad);
 
   document.getElementById("aviso-sin-datos").classList.toggle("oculto", r.tiene_datos);
   document.getElementById("subtitulo").textContent = r.tiene_datos
     ? "Este es el resumen de tu producción."
-    : "Todavía no hay movimientos registrados en tus fincas.";
+    : "Todavía no hay movimientos registrados en tus chacos.";
 }
+
+document.getElementById("producto-saldos-lista").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-saldo-producto]");
+  if (!btn) return;
+  document.querySelector('[data-vista="kardex"]').click();
+  document.getElementById("filtro-producto").value = btn.dataset.saldoProducto;
+  render();
+  document.getElementById("tabla-titulo").scrollIntoView({ block: "nearest" });
+});
+
+document.getElementById("tabla-cuerpo").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-recibo]");
+  if (!btn) return;
+  const registro = datos.cosechas.find(c => c.id === Number(btn.dataset.recibo));
+  if (registro?.recibida != null) acopio.comprobante(registro);
+});
 
 async function cargar() {
   if (!token()) { window.location.href = "/portal"; return; }
@@ -361,7 +393,40 @@ async function cargar() {
   }
 }
 
-cargar();
+document.addEventListener("DOMContentLoaded", cargar);
+
+document.getElementById("btn-excel").addEventListener("click", async function () {
+  const boton = this;
+  const tabla = vistaActual;
+  const filtros = new URLSearchParams();
+  if (tabla !== "fincas") {
+    for (const [clave, id] of [["producto_id", "filtro-producto"], ["buscar", "filtro-texto"], ["fecha_desde", "filtro-desde"], ["fecha_hasta", "filtro-hasta"]]) {
+      const valor = document.getElementById(id).value;
+      if (valor) filtros.set(clave, valor);
+    }
+  }
+  boton.disabled = true;
+  try {
+    const resp = await fetch("/reportes/excel/" + tabla + "?" + filtros, {
+      headers: { Authorization: "Bearer " + token() }
+    });
+    if (resp.status === 401) { salir(); return; }
+    if (!resp.ok) {
+      const error = await resp.json().catch(() => ({}));
+      throw new Error(typeof error.detail === "string" ? error.detail : "No se pudo descargar la tabla.");
+    }
+    const url = URL.createObjectURL(await resp.blob());
+    const enlace = document.createElement("a");
+    enlace.href = url;
+    enlace.download = "kardex-" + tabla + ".xlsx";
+    enlace.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  } catch (error) {
+    document.getElementById("tabla-conteo").textContent = error.message;
+  } finally {
+    boton.disabled = false;
+  }
+});
 </script>
 <script>
 /* ---------------------------------------------------------- tema */

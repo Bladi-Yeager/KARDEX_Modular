@@ -68,5 +68,6 @@ class LoteService:
             finca_id=data.finca_id,
             fecha_ingreso=data.fecha_ingreso,
             detalle=data.detalle,
+            producto_id=data.producto_id,
         )
         return self.repository.add(lote)

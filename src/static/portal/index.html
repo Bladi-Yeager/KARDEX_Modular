@@ -56,7 +56,7 @@
     <section class="card">
       <div class="tabs" role="tablist">
         <button class="tab activo" data-tab="login" role="tab">Ingresar</button>
-        <button class="tab" data-tab="registro" role="tab">Crear cuenta</button>
+        <button class="tab" data-tab="registro" role="tab">Solicitar acceso</button>
       </div>
 
       <!-- LOGIN -->
@@ -75,13 +75,13 @@
         <button type="submit" class="btn-principal" id="btn-login">Entrar a mi Kardex</button>
         <div class="mensaje" id="msg-login" role="alert"></div>
 
-        <p class="pie-form">¿Eres encargado o trabajador? Pide tu código de invitación al administrador.</p>
+        <p class="pie-form">¿Tienes una cuenta interna? <a href="/admin">Entra al panel de la empresa</a>.</p>
       </form>
 
       <!-- REGISTRO -->
       <form id="form-registro" class="form oculto" autocomplete="on">
-        <h2>Crea tu cuenta de productor</h2>
-        <p class="muted">El registro es libre. Tu cuenta será de tipo <strong>productor (cliente)</strong>.</p>
+        <h2>Solicita acceso al portal</h2>
+        <p class="muted">Elige una contraseña personal. El administrador recibirá tu solicitud para verificar tu afiliación y asignarte el chaco correspondiente.</p>
 
         <label>Nombre completo
           <input type="text" name="nombre_completo" id="reg-nombre" required placeholder="Ej. Bladimir Soria">
@@ -99,13 +99,14 @@
           <input type="password" id="reg-password2" required placeholder="••••••••">
         </label>
 
-        <button type="submit" class="btn-principal" id="btn-registro">Crear mi cuenta</button>
+        <button type="submit" class="btn-principal" id="btn-registro">Solicitar acceso</button>
         <div class="mensaje" id="msg-registro" role="alert"></div>
 
         <p class="pie-form">Al crear la cuenta solo podrás <strong>ver</strong> tu información. No podrás editar ni borrar datos.</p>
       </form>
     </section>
   </main>
+  <p class="soporte-portal"><a href="https://wa.me/59167559408" target="_blank" rel="noopener noreferrer">Soporte por WhatsApp · +591 67559408</a></p>
 
   <footer class="auth-footer">
     Kardex Agrícola · Sistema de gestión y control de producción
@@ -174,6 +175,11 @@ document.getElementById("form-login").addEventListener("submit", async (e) => {
       })
     });
     const datos = await leerRespuesta(resp);
+    if (datos.usuario.rol !== "cliente") {
+      localStorage.setItem("kardex_admin_token", datos.access_token);
+      location.assign("/admin");
+      return;
+    }
     guardarSesion(datos);
     window.location.href = "/portal/panel";
   } catch (err) {
@@ -197,7 +203,7 @@ document.getElementById("form-registro").addEventListener("submit", async (e) =>
 
   const boton = document.getElementById("btn-registro");
   boton.disabled = true;
-  boton.textContent = "Creando cuenta...";
+  boton.textContent = "Enviando solicitud...";
 
   try {
     const resp = await fetch(API + "/auth/register", {
@@ -209,24 +215,15 @@ document.getElementById("form-registro").addEventListener("submit", async (e) =>
         password: password
       })
     });
-    const usuario = await leerRespuesta(resp);
-
-    // Entra automáticamente después de registrarse.
-    const respLogin = await fetch(API + "/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: document.getElementById("reg-username").value.trim(),
-        password: password
-      })
-    });
-    const datos = await leerRespuesta(respLogin);
-    guardarSesion(datos);
-    window.location.href = "/portal/panel";
+    await leerRespuesta(resp);
+    e.target.reset();
+    mostrarMensaje("msg-registro", "Solicitud enviada. Cuando el administrador la apruebe, entra con el usuario y la contraseña que elegiste.", "ok");
+    boton.disabled = false;
+    boton.textContent = "Solicitar acceso";
   } catch (err) {
     mostrarMensaje("msg-registro", err.message, "error");
     boton.disabled = false;
-    boton.textContent = "Crear mi cuenta";
+    boton.textContent = "Solicitar acceso";
   }
 });
 

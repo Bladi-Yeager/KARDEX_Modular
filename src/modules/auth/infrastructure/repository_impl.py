@@ -27,7 +27,7 @@ class UsuarioRepositoryImpl:
         return [self._to_domain(row) for row in rows]
 
     def get_by_id(self, usuario_id: int) -> Optional[Usuario]:
-        row = self.db.query(UsuarioDB).get(usuario_id)
+        row = self.db.get(UsuarioDB, usuario_id)
         return self._to_domain(row) if row else None
 
     def get_by_username(self, username: str) -> Optional[Usuario]:

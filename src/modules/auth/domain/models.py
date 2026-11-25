@@ -3,7 +3,12 @@ from datetime import datetime
 from typing import Optional
 
 
-ROLES_VALIDOS = ("admin", "encargado", "trabajador", "cliente")
+ROLES_VALIDOS = ("soporte", "jefe", "admin", "cliente")
+
+
+def rol_efectivo(rol: str) -> str:
+    # Las cuentas de encargado existentes conservan sus permisos operativos.
+    return {"encargado": "admin", "trabajador": "cliente"}.get(rol, rol)
 
 
 @dataclass

@@ -26,6 +26,18 @@ class CosechaDelProductor:
     kg: float
     monto_bs: float
     observacion: Optional[str]
+    producto_id: Optional[int] = None
+    producto: str = "Histórico sin clasificar"
+    unidad: str = "kg"
+    cantidad: float = 0
+    recibida: Optional[float] = None
+    rechazada: Optional[float] = None
+    motivo_rechazo: Optional[str] = None
+    cantidad_secundaria: Optional[float] = None
+    unidad_secundaria: Optional[str] = None
+    fecha_recepcion: Optional[date] = None
+    codigo_lote: Optional[str] = None
+    documento_recepcion: Optional[str] = None
 
 
 @dataclass
@@ -40,6 +52,14 @@ class MovimientoDelProductor:
     salida_kg: float
     saldo_kg: float
     observacion: Optional[str]
+    producto_id: Optional[int] = None
+    producto: str = "Histórico sin clasificar"
+    unidad: str = "kg"
+    cantidad_entrada: float = 0
+    cantidad_salida: float = 0
+    cantidad_saldo: float = 0
+    tipo: str = "movimiento"
+    anula_movimiento_id: Optional[int] = None
 
 
 @dataclass
@@ -49,3 +69,7 @@ class LoteDelProductor:
     finca: Optional[str]
     fecha_ingreso: date
     detalle: Optional[str]
+    cosecha_id: Optional[int] = None
+    producto_id: Optional[int] = None
+    producto: str = "Histórico sin clasificar"
+    unidad: str = "kg"

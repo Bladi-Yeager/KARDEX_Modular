@@ -6,11 +6,13 @@ nunca puede ver fincas, cosechas ni movimientos de otro productor.
 
 from typing import List
 
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
-from src.modules.inventory.infrastructure.models_db import FincaDB, LoteDB, ParcelaDB
+from src.modules.inventory.infrastructure.models_db import FincaDB, LoteDB, ParcelaDB, ProductoDB
 from src.modules.kardex.infrastructure.models_db import CosechaDB, MovimientoDB
+from src.modules.kardex.domain.saldos import acumular_por_producto, datos_producto
+from src.modules.kardex.infrastructure.repository_impl import datos_movimiento, datos_recepcion, finca_del_movimiento
 from src.modules.portal.domain.models import (
     CosechaDelProductor,
     FincaDelProductor,
@@ -29,14 +31,6 @@ class PortalRepositoryImpl:
         filas = (
             self.db.query(FincaDB.id)
             .filter(FincaDB.usuario_id == usuario_id)
-            .all()
-        )
-        return [f[0] for f in filas]
-
-    def _mis_cosecheros(self, usuario_id: int) -> List[int]:
-        filas = (
-            self.db.query(CosecheroDB.id)
-            .filter(CosecheroDB.usuario_id == usuario_id)
             .all()
         )
         return [f[0] for f in filas]
@@ -83,28 +77,23 @@ class PortalRepositoryImpl:
     # ------------------------------------------------------------------ cosechas
     def cosechas(self, usuario_id: int) -> List[CosechaDelProductor]:
         fincas = self._mis_fincas(usuario_id)
-        cosecheros = self._mis_cosecheros(usuario_id)
-        if not fincas and not cosecheros:
+        if not fincas:
             return []
 
-        condiciones = []
-        if fincas:
-            condiciones.append(CosechaDB.finca_id.in_(fincas))
-        if cosecheros:
-            condiciones.append(CosechaDB.cosechero_id.in_(cosecheros))
-
         filas = (
-            self.db.query(CosechaDB, FincaDB, ParcelaDB, CosecheroDB)
+            self.db.query(CosechaDB, FincaDB, ParcelaDB, CosecheroDB, ProductoDB, LoteDB)
             .outerjoin(FincaDB, CosechaDB.finca_id == FincaDB.id)
-            .outerjoin(ParcelaDB, CosechaDB.parcela_id == ParcelaDB.id)
+            .outerjoin(ParcelaDB, and_(CosechaDB.parcela_id == ParcelaDB.id, CosechaDB.finca_id == ParcelaDB.finca_id))
             .outerjoin(CosecheroDB, CosechaDB.cosechero_id == CosecheroDB.id)
-            .filter(or_(*condiciones))
+            .outerjoin(ProductoDB, CosechaDB.producto_id == ProductoDB.id)
+            .outerjoin(LoteDB, LoteDB.cosecha_id == CosechaDB.id)
+            .filter(CosechaDB.finca_id.in_(fincas), CosechaDB.borrador.is_(False))
             .order_by(CosechaDB.fecha.desc(), CosechaDB.id.desc())
             .all()
         )
 
         resultado = []
-        for cosecha, finca, parcela, cosechero in filas:
+        for cosecha, finca, parcela, cosechero, producto, lote in filas:
             resultado.append(
                 CosechaDelProductor(
                     id=cosecha.id,
@@ -116,6 +105,9 @@ class PortalRepositoryImpl:
                     kg=float(cosecha.kg or 0),
                     monto_bs=float(cosecha.monto_bs or 0),
                     observacion=cosecha.observacion,
+                    codigo_lote=lote.codigo if lote else None,
+                    **datos_producto(producto),
+                    **datos_recepcion(cosecha, lote),
                 )
             )
         return resultado
@@ -126,26 +118,20 @@ class PortalRepositoryImpl:
         if not fincas:
             return []
 
-        lotes = [
-            l[0]
-            for l in self.db.query(LoteDB.id).filter(LoteDB.finca_id.in_(fincas)).all()
-        ]
-
-        condiciones = [MovimientoDB.finca_id.in_(fincas)]
-        if lotes:
-            condiciones.append(MovimientoDB.lote_id.in_(lotes))
-
+        finca_visible = finca_del_movimiento()
         filas = (
-            self.db.query(MovimientoDB, FincaDB, LoteDB)
-            .outerjoin(FincaDB, MovimientoDB.finca_id == FincaDB.id)
+            self.db.query(MovimientoDB, FincaDB, LoteDB, ProductoDB)
             .outerjoin(LoteDB, MovimientoDB.lote_id == LoteDB.id)
-            .filter(or_(*condiciones))
+            .join(FincaDB, finca_visible == FincaDB.id)
+            .outerjoin(ProductoDB, LoteDB.producto_id == ProductoDB.id)
+            .filter(FincaDB.usuario_id == usuario_id)
             .order_by(MovimientoDB.fecha.asc(), MovimientoDB.id.asc())
             .all()
         )
 
         resultado = []
-        for mov, finca, lote in filas:
+        saldos = acumular_por_producto((mov, producto.id if producto else None) for mov, _, _, producto in filas)
+        for (mov, finca, lote, producto), saldo in zip(filas, saldos):
             resultado.append(
                 MovimientoDelProductor(
                     id=mov.id,
@@ -154,10 +140,9 @@ class PortalRepositoryImpl:
                     doc=mov.doc,
                     lote=lote.codigo if lote else None,
                     finca=finca.nombre if finca else None,
-                    entrada_kg=float(mov.entrada_kg or 0),
-                    salida_kg=float(mov.salida_kg or 0),
-                    saldo_kg=float(mov.saldo_kg or 0),
                     observacion=mov.observacion,
+                    anula_movimiento_id=mov.anula_movimiento_id,
+                    **datos_movimiento(mov, producto, saldo),
                 )
             )
         return resultado
@@ -169,8 +154,9 @@ class PortalRepositoryImpl:
             return []
 
         filas = (
-            self.db.query(LoteDB, FincaDB)
+            self.db.query(LoteDB, FincaDB, ProductoDB)
             .outerjoin(FincaDB, LoteDB.finca_id == FincaDB.id)
+            .outerjoin(ProductoDB, LoteDB.producto_id == ProductoDB.id)
             .filter(LoteDB.finca_id.in_(fincas))
             .order_by(LoteDB.fecha_ingreso.desc())
             .all()
@@ -182,6 +168,8 @@ class PortalRepositoryImpl:
                 finca=finca.nombre if finca else None,
                 fecha_ingreso=lote.fecha_ingreso,
                 detalle=lote.detalle,
+                cosecha_id=lote.cosecha_id,
+                **datos_producto(producto),
             )
-            for lote, finca in filas
+            for lote, finca, producto in filas
         ]

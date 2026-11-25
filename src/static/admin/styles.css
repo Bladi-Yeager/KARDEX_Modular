@@ -395,3 +395,117 @@ tr:last-child td{border-bottom:0}
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
 }
+
+/* Paleta de almacén. El color distingue cosecha, entrada, salida y saldo. */
+:root {
+  --teal: #79ceac;
+  --terra: #f1a580;
+  --blue: #8dbaf3;
+  --violet: #c3adf8;
+  --primary: #215947;
+  --primary2: #286957;
+  --sidebar: #132c2b;
+  --sidebar2: #1c3738;
+}
+:root[data-theme="light"] {
+  --bg: #f4f6f2;
+  --bg2: #edf1ec;
+  --panel2: #f6f8f5;
+  --text: #203031;
+  --text2: #34474a;
+  --muted: #526668;
+  --line: #dce5e0;
+  --line2: #cedbd6;
+  --teal: #236850;
+  --terra: #a54d2d;
+  --blue: #2b5e96;
+  --violet: #64458f;
+  --indigo: #345d67;
+  --primary: #245743;
+  --primary2: #286a53;
+  --sidebar: #162f30;
+  --sidebar2: #1d3839;
+  --soft: #eaf2ed;
+  --soft-line: #c3d7cf;
+  --shadow: 0 8px 24px rgba(24,53,42,.06);
+  --input-line: #c9d9d1;
+  --input-focus: #347b68;
+}
+.auth-visual{
+  background:linear-gradient(145deg,rgba(10,30,36,.90),rgba(14,40,40,.77) 55%,rgba(15,33,29,.38)),
+    url("/inicio/static/img/productor.jpg") center/cover;
+}
+.auth-visual::before,.auth-visual::after{display:none}
+.auth-message h1{color:#fff}
+.auth-message p{color:#edf3ea}
+.sidebar nav{margin-top:22px}
+.sidebar .brand{font-size:15px}
+.sidebar .brand,.auth-visual .brand{color:#f2f9f2}
+.nav-item.active{box-shadow:inset 3px 0 #91d1a9}
+.page-head h1{background:none;color:var(--text);font-size:clamp(26px,3vw,38px)}
+.page-head p,.muted{font-size:14px;line-height:1.55}
+.topbar{padding-right:85px}
+.btn{min-height:38px}
+.btn-excel{background:var(--soft);border:1px solid var(--soft-line);color:var(--teal)}
+.btn:disabled{opacity:.55;cursor:wait}
+.harvest-hero{
+  min-height:210px;display:flex;align-items:flex-end;padding:clamp(22px,4.5vw,48px);margin-bottom:18px;
+  border-radius:20px;color:#fff;background:
+  linear-gradient(90deg,rgba(15,44,44,.96) 10%,rgba(17,49,48,.86) 56%,rgba(17,49,48,.18)),
+  url("/inicio/static/img/productor.jpg") center 58%/cover;
+}
+.harvest-hero h1{font-size:clamp(25px,4vw,44px);line-height:1.12;margin:0 0 9px;letter-spacing:-.03em}
+.harvest-hero p{margin:0;max-width:47ch;line-height:1.55;color:#e7f0e9}
+.period-form{display:grid;grid-template-columns:repeat(3,minmax(112px,1fr)) auto;gap:12px;align-items:end}
+.period-form .btn{min-height:44px}
+.metric{display:flex;flex-direction:column;align-items:flex-start;min-width:0;text-align:left}
+button.metric:hover{border-color:var(--metric);transform:translateY(-2px)}
+.kpi-grid .metric{border-top:3px solid var(--metric);transition:transform .18s,border-color .18s}
+.cards.kpi-grid .metric .stat-value{color:var(--metric);overflow-wrap:anywhere}
+.metric.teal{--metric:var(--teal)}
+.metric.blue{--metric:var(--blue)}
+.metric.terra{--metric:var(--terra)}
+.metric.violet{--metric:var(--violet)}
+.stat-top,.stat-note{font-size:12px}
+.overview-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(210px,1fr);gap:16px;align-items:start}
+.chart-legend{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:16px}
+.chart-key{width:10px;height:10px;border-radius:50%;display:inline-block}
+.chart-key.out{margin-left:9px}
+.chart-key.in,.chart-fill.in{background:var(--teal)}
+.chart-key.out,.chart-fill.out{background:var(--terra)}
+.chart-week{display:grid;grid-template-columns:70px 1fr;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:12px}
+.chart-series{display:grid;grid-template-columns:minmax(0,1fr) 86px;align-items:center;gap:10px;margin:5px 0}
+.chart-track{height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.chart-fill{display:block;width:var(--fill);height:100%;border-radius:4px;animation:bar-enter .35s ease-out}
+@keyframes bar-enter{from{transform:scaleX(0);transform-origin:left}to{transform:scaleX(1);transform-origin:left}}
+.chart-value{text-align:right;font-variant-numeric:tabular-nums}
+.money-value{color:var(--violet);font-size:27px;font-weight:800;margin:0 0 12px}
+.finance-totals{margin:0 0 14px}
+.finance-totals div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.finance-totals dt{color:var(--muted)}
+.finance-totals dd{margin:0;text-align:right;font-weight:700}
+.finance-totals .positive{color:var(--teal)}
+.finance-totals .negative{color:var(--terra)}
+.scope-banner,.table-actions,.affiliation{display:flex;align-items:center;gap:8px}
+.scope-banner{justify-content:space-between;margin:12px 0 16px}
+.affiliation{display:inline-flex;margin:3px}
+.table-actions .btn,.affiliation .btn{font-size:11px;min-height:30px;padding:6px 9px}
+.action-dialog{width:min(92vw,580px);border:1px solid var(--line2);border-radius:15px;padding:23px;color:var(--text);background:var(--panel);box-shadow:var(--shadow)}
+.action-dialog::backdrop{background:rgba(8,19,25,.65)}
+.loading{padding:22px 0;color:var(--muted)}
+.cierre-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:20px 0 12px;flex-wrap:wrap}
+.cierre-bar h2{font-size:18px;margin:0}
+.product-grid{grid-template-columns:repeat(auto-fit,minmax(155px,1fr))}
+.product-card[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--metric)}
+.receipt-accepted{padding:12px 14px;background:var(--soft);color:var(--teal);border:1px solid var(--soft-line);border-radius:10px;font-weight:750}
+.panel-head .field{min-width:min(160px,45vw)}
+:focus-visible{outline:2px solid var(--input-focus);outline-offset:3px}
+@media(max-width:1050px){.overview-grid{grid-template-columns:1fr}}
+@media(max-width:720px){
+  .period-form{grid-template-columns:repeat(2,minmax(0,1fr));padding:14px}
+  .harvest-hero{min-height:164px;border-radius:14px}
+  .scope-banner{flex-wrap:wrap}
+}
+@media(prefers-reduced-motion:reduce){.chart-fill{animation:none}button.metric:hover{transform:none}}
+
+#aviso-solicitudes[hidden] { display: none; }

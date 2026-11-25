@@ -5,9 +5,46 @@ anterior) se actualice sola sin perder datos: agrega columnas y tablas nuevas
 solo si no estan. Es idempotente: se puede ejecutar muchas veces.
 """
 
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
 from src.core.database import engine
+
+CATALOGO_INICIAL = (
+    {"nombre": "Piña", "unidad": "unidad"},
+    {"nombre": "Banano", "unidad": "caja"},
+    {"nombre": "Pitahaya", "unidad": "kg"},
+)
+
+
+def _migrar_acopio(conn):
+    campos = {
+        "registros_financieros": {"lote_id": "INT NULL"},
+        "cosechas": {
+            "producto_id": "INT NULL", "cantidad": "DECIMAL(12,3) NULL",
+            "recibida": "DECIMAL(12,3) NULL", "rechazada": "DECIMAL(12,3) NULL",
+            "motivo_rechazo": "VARCHAR(200) NULL", "cantidad_secundaria": "DECIMAL(12,3) NULL",
+            "unidad_secundaria": "VARCHAR(10) NULL", "documento_recepcion": "VARCHAR(30) NULL",
+        },
+        "lotes": {"producto_id": "INT NULL"},
+        "kardex_movimientos": {
+            "cantidad_entrada": "DECIMAL(12,3) NULL", "cantidad_salida": "DECIMAL(12,3) NULL",
+            "tipo": "VARCHAR(12) NULL",
+        },
+    }
+    sqlite = conn.dialect.name == "sqlite"
+    for tabla, columnas in campos.items():
+        existentes = {col["name"] for col in inspect(conn).get_columns(tabla)}
+        for campo, tipo in columnas.items():
+            if campo in existentes:
+                continue
+            sql = f"ALTER TABLE {tabla} ADD COLUMN {campo} {tipo}"
+            if campo == "lote_id":
+                sql += " REFERENCES lotes(id)" if sqlite else ", ADD FOREIGN KEY (lote_id) REFERENCES lotes(id)"
+            if campo == "producto_id":
+                sql += " REFERENCES productos(id)" if sqlite else ", ADD FOREIGN KEY (producto_id) REFERENCES productos(id)"
+            conn.execute(text(sql))
+    insertar = "INSERT OR IGNORE" if sqlite else "INSERT IGNORE"
+    conn.execute(text(f"{insertar} INTO productos (nombre, unidad) VALUES (:nombre, :unidad)"), list(CATALOGO_INICIAL))
 
 
 def _table_exists(conn, tabla: str) -> bool:
@@ -56,13 +93,16 @@ def _index_exists(conn, tabla: str, indice: str) -> bool:
 
 def run_migrations() -> None:
     with engine.begin() as conn:
+        if conn.dialect.name == "sqlite":
+            conn.execute(text("INSERT OR IGNORE INTO kardex_control (id, revision) VALUES (1, 0)"))
+            _migrar_acopio(conn)
+            return
+
         # 1) El rol pasa de ENUM cerrado a texto, para poder tener
         #    admin / encargado / trabajador / cliente sin romper la tabla.
-        conn.execute(
-            text(
-                "ALTER TABLE usuarios MODIFY rol VARCHAR(32) NOT NULL DEFAULT 'cliente'"
-            )
-        )
+        columnas = {col["name"]: col for col in inspect(conn).get_columns("usuarios")}
+        if columnas["rol"]["type"].__class__.__name__ == "ENUM":
+            conn.execute(text("ALTER TABLE usuarios MODIFY rol VARCHAR(32) NOT NULL DEFAULT 'cliente'"))
 
         # 2) Dueno de cada finca (el productor / cliente).
         if not _column_exists(conn, "fincas", "usuario_id"):
@@ -100,8 +140,24 @@ def run_migrations() -> None:
                 )
             )
 
-        # 5) Limpieza: una version anterior de la tabla cosechas traia una
-        #    columna suelta llamada 'bladi' (NOT NULL, sin valor por defecto)
-        #    que impedia registrar cosechas. Ya no se usa: se elimina.
-        if _column_exists(conn, "cosechas", "bladi"):
-            conn.execute(text("ALTER TABLE cosechas DROP COLUMN bladi"))
+        if not _column_exists(conn, "cosechas", "borrador"):
+            conn.execute(text("ALTER TABLE cosechas ADD borrador BOOLEAN NOT NULL DEFAULT FALSE"))
+        if not _column_exists(conn, "lotes", "cosecha_id"):
+            conn.execute(text(
+                "ALTER TABLE lotes ADD cosecha_id INT NULL UNIQUE, "
+                "ADD FOREIGN KEY (cosecha_id) REFERENCES cosechas(id)"
+            ))
+        if not _column_exists(conn, "kardex_movimientos", "anula_movimiento_id"):
+            conn.execute(text(
+                "ALTER TABLE kardex_movimientos ADD anula_movimiento_id INT NULL UNIQUE, "
+                "ADD FOREIGN KEY (anula_movimiento_id) REFERENCES kardex_movimientos(id)"
+            ))
+        if not _column_exists(conn, "kardex_movimientos", "registrado_por"):
+            conn.execute(text(
+                "ALTER TABLE kardex_movimientos ADD registrado_por INT NULL, "
+                "ADD FOREIGN KEY (registrado_por) REFERENCES usuarios(id)"
+            ))
+        conn.execute(text(
+            "INSERT INTO kardex_control (id, revision) VALUES (1, 0) ON DUPLICATE KEY UPDATE id = id"
+        ))
+        _migrar_acopio(conn)

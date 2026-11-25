@@ -8,3 +8,7 @@ class MovimientoNoEncontrado(Exception):
     def __init__(self, movimiento_id: int):
         self.movimiento_id = movimiento_id
         super().__init__(f"Movimiento {movimiento_id} no encontrado")
+class OperacionKardexError(Exception):
+    def __init__(self, mensaje: str, status: int = 422):
+        super().__init__(mensaje)
+        self.status = status

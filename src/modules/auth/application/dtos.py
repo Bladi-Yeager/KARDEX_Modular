@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ClienteRegister(BaseModel):
@@ -10,6 +10,18 @@ class ClienteRegister(BaseModel):
     username: str = Field(min_length=3, max_length=50)
     password: str = Field(min_length=6, max_length=72)
     nombre_completo: str = Field(min_length=3, max_length=100)
+
+    @field_validator("username", "nombre_completo", mode="before")
+    @classmethod
+    def limpiar(cls, valor):
+        return valor.strip() if isinstance(valor, str) else valor
+
+    @field_validator("password")
+    @classmethod
+    def limite_bcrypt(cls, valor: str) -> str:
+        if len(valor.encode("utf-8")) > 72:
+            raise ValueError("La contraseña supera el límite admitido de 72 bytes.")
+        return valor
 
 
 class StaffRegister(BaseModel):
@@ -27,12 +39,8 @@ class AdminBootstrap(BaseModel):
     nombre_completo: str = Field(min_length=3, max_length=100)
 
 
-class UsuarioCreateAdmin(BaseModel):
-    """El administrador crea una cuenta y elige su rol (nunca 'admin')."""
-
-    username: str = Field(min_length=3, max_length=50)
-    password: str = Field(min_length=6, max_length=72)
-    nombre_completo: str = Field(min_length=3, max_length=100)
+class UsuarioCreateAdmin(ClienteRegister):
+    password: str = Field(min_length=12, max_length=72)
     rol: str = "cliente"
 
 

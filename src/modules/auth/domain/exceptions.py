@@ -32,3 +32,7 @@ class AdminYaExiste(Exception):
         super().__init__(
             "Ya existe un administrador principal. El administrador se crea una sola vez."
         )
+
+
+class SolicitudPendiente(Exception):
+    pass

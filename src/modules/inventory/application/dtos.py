@@ -1,6 +1,18 @@
 from datetime import date
-from typing import Optional
-from pydantic import BaseModel
+from typing import Annotated, Literal, Optional
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+
+Unidad = Literal["kg", "unidad", "caja"]
+
+
+class ProductoCreate(BaseModel):
+    nombre: Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=70)]
+    unidad: Unidad
+
+
+class ProductoOut(ProductoCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
 
 
 class FincaCreate(BaseModel):
@@ -41,10 +53,17 @@ class LoteCreate(BaseModel):
     finca_id: Optional[int] = None
     fecha_ingreso: date
     detalle: Optional[str] = None
+    producto_id: int = Field(gt=0)
 
 
-class LoteOut(LoteCreate):
+class LoteOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
-
-    class Config:
-        from_attributes = True
+    codigo: str
+    finca_id: Optional[int] = None
+    fecha_ingreso: date
+    detalle: Optional[str] = None
+    cosecha_id: Optional[int] = None
+    producto_id: Optional[int] = None
+    producto: str = "Histórico sin clasificar"
+    unidad: Unidad = "kg"

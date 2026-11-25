@@ -1,3 +1,4 @@
+from src.modules.auth.domain.models import rol_efectivo
 from src.modules.portal.application.dtos import (
     ClienteAdminOut,
     CosechaPortalOut,
@@ -7,6 +8,7 @@ from src.modules.portal.application.dtos import (
     ResumenPortalOut,
 )
 from src.modules.portal.domain.repositories import PortalRepository
+from src.modules.kardex.domain.saldos import resumen_por_producto
 
 
 class PortalService:
@@ -26,6 +28,8 @@ class PortalService:
         total_kg = round(sum(c.kg for c in cosechas), 3)
         entradas = round(sum(m.entrada_kg for m in movimientos), 3)
         salidas = round(sum(m.salida_kg for m in movimientos), 3)
+        existencias = resumen_por_producto(cosechas, movimientos)
+        unico = existencias[0] if len(existencias) == 1 and existencias[0]["unidad"] == "kg" else None
 
         return ResumenPortalOut(
             productor=usuario.nombre_completo,
@@ -37,9 +41,10 @@ class PortalService:
             total_monto_bs=round(sum(c.monto_bs for c in cosechas), 2),
             entradas_kg=entradas,
             salidas_kg=salidas,
-            saldo_kg=movimientos[-1].saldo_kg if movimientos else 0,
+            saldo_kg=unico["saldo"] if unico else 0,
             ultima_actividad=ultima,
             tiene_datos=bool(fincas or cosechas or movimientos),
+            existencias=existencias,
         )
 
     def fincas(self, usuario) -> list[FincaPortalOut]:
@@ -61,7 +66,7 @@ class PortalService:
         """Lista los usuarios con rol cliente y las fincas que tienen asignadas."""
         salida = []
         for usuario in usuarios_repo.list_all():
-            if usuario.rol != "cliente":
+            if rol_efectivo(usuario.rol) != "cliente":
                 continue
             fincas = self.repository.fincas(usuario.id)
             salida.append(

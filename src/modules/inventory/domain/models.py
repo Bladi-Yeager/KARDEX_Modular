@@ -29,3 +29,7 @@ class Lote:
     finca_id: Optional[int] = None
     detalle: Optional[str] = None
     id: Optional[int] = None
+    cosecha_id: Optional[int] = None
+    producto_id: Optional[int] = None
+    producto: str = "Histórico sin clasificar"
+    unidad: str = "kg"
