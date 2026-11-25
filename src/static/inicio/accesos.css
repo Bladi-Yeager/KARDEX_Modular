@@ -1,5 +1,5 @@
 * { box-sizing: border-box; }
-body { margin: 0; color: #142942; background: #f8fafc; font: 700 1rem/1.5 "DM Sans", system-ui, sans-serif; }
+body { margin: 0; color: #29272b; background: #f7f6f4; font: 700 1rem/1.5 "DM Sans", system-ui, sans-serif; }
 header, main { max-width: 64rem; margin: auto; padding: 1.35rem clamp(1rem, 5vw, 3.5rem); }
 header { border-bottom: 1px solid #c2d3e3; font-weight: 750; }
 h1 { font: 800 clamp(2rem, 5vw, 3.8rem)/1.08 Georgia, serif; margin: .45em 0 .65em; }
@@ -8,10 +8,10 @@ nav a { display: flex; align-items: flex-end; justify-content: space-between; co
 nav a::after { content: "↗"; font-weight: 700; }
 nav a:focus-visible { outline: 3px solid #142942; outline-offset: 4px; }
 nav a:hover { box-shadow: 0 5px 16px #1429422e; }
-.trabajador { --shade: #203a57; --accent: #89a9c9; --photo: url('img/productor.jpg'); }
-.administrador { --shade: #203a57; --accent: #89a9c9; --photo: url('img/admin.jpg'); }
-.dueno { --shade: #142942; --accent: #9ab8d4; --photo: linear-gradient(120deg,#29486b,#527fae); }
-.creador { --shade: #142942; --accent: #89a9c9; --photo: url('img/base.jpg'); }
+.trabajador { --shade: #49301d; --accent: #ddaa69; --photo: url('img/productor.jpg'); }
+.administrador { --shade: #442e46; --accent: #ce9ac0; --photo: url('img/admin.jpg'); }
+.dueno { --shade: #302236; --accent: #bbaaCF; --photo: linear-gradient(120deg,#41334a,#78627c); }
+.creador { --shade: #282b2e; --accent: #a1a7af; --photo: url('img/base.jpg'); }
 @media(max-width: 36rem) { nav { grid-template-columns: 1fr; } nav a { min-height: 6.1rem; } }
 
 nav a { font-weight:750; }

@@ -94,3 +94,19 @@ class DireccionMensualTest(unittest.TestCase):
             direccion.excel_periodo(self.hoy, self.ayer, self.db)
         self.assertEqual(direccion.rangos_mes(date(2026,1,5))[2:], (date(2025,12,1),date(2025,12,5)))
         self.assertEqual(direccion.rangos_mes(date(2024,3,30))[-1], date(2024,2,29))
+
+    def test_seleccion_calendario(self):
+        mensual = self.direccion.mensual
+        for anio, mes, fin, previo in [
+            (2026, 2, date(2026, 2, 28), date(2026, 1, 31)),
+            (2026, 1, date(2026, 1, 31), date(2025, 12, 31)),
+            (2024, 2, date(2024, 2, 29), date(2024, 1, 31)),
+        ]:
+            with self.subTest(anio=anio, mes=mes):
+                datos = mensual(db=self.db, anio=anio, mes=mes)
+                self.assertEqual((datos["hasta"], datos["anterior"]["hasta"]), (fin, previo))
+        futuro = mensual(db=self.db, anio=2027, mes=1)
+        self.assertTrue(futuro["futuro"])
+        self.assertIsNone(futuro["actual"])
+        with self.assertRaises(HTTPException):
+            mensual(db=self.db, anio=2026, mes=13)

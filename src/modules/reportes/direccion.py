@@ -1,3 +1,4 @@
+from calendar import monthrange
 from datetime import date, timedelta
 from functools import lru_cache
 from src.modules.inventory.bitacora import informe_campo
@@ -74,11 +75,16 @@ def intervalo(hoy, dias, desde, hasta):
     return desde, hasta
 
 
-def rangos_mes(hoy):
-    inicio = hoy.replace(day=1)
+def rangos_mes(hoy, inicio=None):
+    inicio = inicio or hoy.replace(day=1)
+    fin_mes = inicio.replace(day=monthrange(inicio.year, inicio.month)[1])
     ultimo_previo = inicio - DIA
-    fin_previo = ultimo_previo.replace(day=min(hoy.day, ultimo_previo.day))
-    return inicio, hoy, ultimo_previo.replace(day=1), fin_previo
+    if inicio <= hoy <= fin_mes:
+        fin = hoy
+        fin_previo = ultimo_previo.replace(day=min(hoy.day, ultimo_previo.day))
+    else:
+        fin, fin_previo = fin_mes, ultimo_previo
+    return inicio, fin, ultimo_previo.replace(day=1), fin_previo
 
 
 def calculadora(db):
@@ -93,16 +99,21 @@ def calculadora(db):
 
 
 @router.get("/mensual")
-def mensual(db: Session = Depends(get_db), _actor=Depends(solo_dueno)):
-    inicio, hoy, previo, fin_previo = rangos_mes(hoy_bolivia())
-    calcular, _ = calculadora(db)
-    campos = ("desde", "hasta", "resultado", "ventas", "gastos", "costo", "actividad")
-    def totales(a, b):
-        datos = calcular(a, b)
-        if not datos["actividad"]:
-            datos["resultado"] = 0
-        return {k: datos[k] for k in campos}
-    return {"actual": totales(inicio, hoy), "anterior": totales(previo, fin_previo)}
+def mensual(db: Session = Depends(get_db), _actor=Depends(solo_dueno),
+            anio: int | None = None, mes: int | None = None):
+    hoy = hoy_bolivia()
+    if (anio is None) != (mes is None):
+        raise HTTPException(422, "Selecciona año y mes.")
+    if anio is not None and not (1900 <= anio <= 9998 and 1 <= mes <= 12):
+        raise HTTPException(422, "Año o mes fuera de rango.")
+    inicio, fin, previo, fin_previo = rangos_mes(hoy, date(anio, mes, 1) if mes else None)
+    if inicio > hoy:
+        return dict(hoy=hoy, futuro=True, desde=inicio, hasta=fin, actual=None, anterior=None)
+    datos = detalle_periodo(db, inicio, fin, previo, fin_previo)
+    for periodo in (datos["actual"], datos["anterior"]):
+        if not periodo["actividad"]:
+            periodo["resultado"] = 0
+    return dict(hoy=hoy, futuro=False, desde=inicio, hasta=fin, **datos)
 
 
 @router.get("/excel-periodo")
@@ -131,9 +142,13 @@ def resumen(dias: int = Query(30, ge=1, le=365), desde: date | None = None, hast
             db: Session = Depends(get_db), _actor=Depends(solo_dueno)):
     inicio, fin = intervalo(hoy_bolivia(), dias, desde, hasta)
     duracion = fin - inicio + DIA
+    return detalle_periodo(db, inicio, fin, inicio - duracion, inicio - DIA)
+
+
+def detalle_periodo(db, inicio, fin, previo, fin_previo):
     calcular, corte = calculadora(db)
     actual = calcular(inicio, fin)
-    anterior = calcular(inicio - duracion, inicio - DIA)
+    anterior = calcular(previo, fin_previo)
     cierre = corte(fin)
     hechos = []
     for l, c in db.query(LoteDB, CosechaDB).join(CosechaDB, LoteDB.cosecha_id==CosechaDB.id).filter(
@@ -150,5 +165,5 @@ def resumen(dias: int = Query(30, ge=1, le=365), desde: date | None = None, hast
         LoteDB.fecha_ingreso.between(inicio, fin), CosechaDB.recibida.isnot(None)).count()
     despachos = db.query(m).filter(m.fecha.between(inicio, fin), m.tipo == "movimiento",
                                   m.cantidad_salida > 0, ~m.id.in_(anulados)).count()
-    return dict(recepciones=recepciones, despachos=despachos, campo=informe_campo(db, inicio, fin), actual=actual, anterior=anterior, hechos=sorted(hechos,key=lambda h:h["fecha"],reverse=True),
+    return dict(recepciones=recepciones, despachos=despachos, campo=informe_campo(db, inicio, fin, previo, fin_previo), actual=actual, anterior=anterior, hechos=sorted(hechos,key=lambda h:h["fecha"],reverse=True),
                 pendientes=[dict(codigo=l["codigo"], motivo=l["estado"]) for l in cierre.values() if l["resultado_bs"] is None])

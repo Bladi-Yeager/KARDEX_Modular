@@ -96,7 +96,7 @@ def health():
 
 @app.get("/jefe", include_in_schema=False)
 def panel_jefe():
-    return FileResponse(STATIC_DIR / "direccion" / "index.html")
+    return FileResponse(STATIC_DIR / "direccion" / "index.html", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/soporte", include_in_schema=False)

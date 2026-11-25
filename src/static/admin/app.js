@@ -90,16 +90,22 @@ function logout() {
   showLogin();
 }
 
+let revisionAviso = 0;
 async function actualizarAviso() {
   const aviso = $("#aviso-solicitudes");
-  aviso.hidden = true;
-  if (session?.rol !== "admin") return;
+  const revision = ++revisionAviso;
+  if (!admin()) { aviso.hidden = true; return; }
+  aviso.hidden = false;
   try {
     const solicitudes = await api("/auth/solicitudes");
-    if (session?.rol !== "admin") return;
-    aviso.textContent = `Solicitudes pendientes (${solicitudes.length})`;
-    aviso.hidden = !solicitudes.length;
-  } catch { aviso.hidden = true; }
+    if (revision !== revisionAviso || !admin()) return;
+    aviso.dataset.pending = String(solicitudes.length > 0);
+    aviso.textContent = solicitudes.length ? "Solicitudes pendientes (" + solicitudes.length + ")" : "Sin solicitudes pendientes";
+  } catch {
+    if (revision !== revisionAviso || !admin()) return;
+    aviso.dataset.pending = "false";
+    aviso.textContent = "Consultar solicitudes";
+  }
 }
 setInterval(() => { if (!document.hidden && session?.rol === "admin") actualizarAviso(); }, 30000);
 
@@ -264,9 +270,13 @@ function existenciasVista(productos) {
       <span class="stat-top">${safe(p.producto)}</span><strong class="stat-value">${acopio.cantidad(p.saldo, p.unidad)}</strong>
       <span class="stat-note">Saldo al cierre</span></button>`;
   }).join("");
-  const valores = [["Saldo inicial", activo.apertura], ["Llegó", activo.recibida], ["Rechazado", activo.rechazada],
-    ["Entradas al Kardex", activo.entrada], ["Salidas, incluidas mermas", activo.salida], ["Merma neta", activo.merma]];
-  const resumen = valores.map(([nombre, valor]) => `<div><dt>${nombre}</dt><dd>${acopio.cantidad(valor, activo.unidad)}</dd></div>`).join("");
+  const valores = [
+    ["Saldo inicial", activo.apertura, "saldo"], ["Llegó", activo.recibida, "recepcion"],
+    ["Rechazado", activo.rechazada, "rechazo"], ["Entradas al Kardex", activo.entrada, "recepcion"],
+    ["Salidas, incluidas mermas", activo.salida, "salida"], ["Merma neta", activo.merma, "rechazo"]
+  ];
+  const resumen = valores.map(([nombre, valor, tipo]) =>
+    `<div class="mov-${tipo}"><dt>${nombre}</dt><dd>${acopio.cantidad(valor, activo.unidad)}</dd></div>`).join("");
   return `<div class="cards kpi-grid product-grid">${tarjetas}</div><div class="overview-grid">
     ${panel("Detalle de " + safe(activo.producto), `<dl class="finance-totals">${resumen}</dl>`,
       button("Ver Kardex", `data-kardex-product="${detailProduct}"`))}

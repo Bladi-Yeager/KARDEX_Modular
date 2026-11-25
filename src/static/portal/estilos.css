@@ -729,19 +729,32 @@ h1, h2, h3 { margin: 0; font-weight: 700; color: var(--texto); }
 }
 
 .soporte-portal { padding: 1rem; text-align: center; }
-.soporte-portal a { color: inherit; text-decoration: underline; }
-
-.auth-shell .brand {
-  background: linear-gradient(155deg, #203a57ec, #29486bc7 62%, #29486bdb), url('/inicio/static/img/productor.jpg') center/cover;
-  color: white;
+body, button, input, select, textarea {font-weight:700}
+:root[data-theme="light"] {
+ --fondo:#f6f5f3; --fondo-2:#efedeb; --blanco:#fff; --blanco-2:#faf9f7; --texto:#29272b; --texto-suave:#444044; --gris:#5c585d;
+ --borde:#ddd9da; --borde-2:#cbc7c9; --azul:#245991; --indigo:#664c76; --violeta:#754c74; --magenta:#814660; --ambar:#845314; --rosa:#983d33;
+ --entrada:#655079; --salida:#8d552e; --saldo:#423a48; --suave:#f2edf3; --suave-borde:#d8cddd;
 }
-.bienvenida { border-inline-start: 5px solid #759abc; padding-inline-start: 1rem; }
-.soporte-portal a { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; padding: .6rem 1.1rem; border-radius: 8px; background: #315881; color: white; font-weight: 700; text-decoration: none; }
-.soporte-portal a:hover { background: #29486b; }
-
-body, button, input, select, textarea { font-weight:700; }
-:root[data-theme="light"] { --azul:#215382; --indigo:#234e7b; --violeta:#395a78; --gris:#495d73; --ambar:#4b6075; --rosa:#98372f; --entrada:#164f91; --salida:#953931; --saldo:#334e6f; }
-:root[data-theme="dark"] { --azul:#add3ff; --indigo:#b8d7f7; --violeta:#bdcfe1; --gris:#beccde; --ambar:#c2d2e6; --rosa:#ffb0a5; --entrada:#a3ccff; --salida:#ffb0a5; --saldo:#c5d4e5; }
-.btn-principal, .soporte-portal a { background:#234b78; color:white; }
-.btn-principal:hover, .soporte-portal a:hover { background:#163858; }
-.form h2, .bienvenida h1 { background:none; color:var(--texto); }
+:root[data-theme="dark"] {
+ --fondo:#1b1a1d; --fondo-2:#201f22; --blanco:#272629; --blanco-2:#302e33; --texto:#f5f2f3; --texto-suave:#e3dddf; --gris:#c6c0c2;
+ --borde:#4d494e; --borde-2:#615a60; --azul:#acd2ff; --indigo:#d7b8eb; --violeta:#dab7da; --magenta:#edbed4; --ambar:#fad196; --rosa:#ffb1a3;
+ --entrada:#d2b8e3; --salida:#f0c59d; --saldo:#e5dae9; --suave:#39303d; --suave-borde:#65576a;
+}
+.auth-shell .brand {background-size:cover;background-position:center;background-image:linear-gradient(145deg,#322717ef,#4d3528df 62%,#3c2922cf),url('/inicio/static/img/productor.jpg')}
+.auth-body,.panel-body {background:var(--fondo)}
+.bienvenida {border-inline-start-color:var(--violeta)}
+.kpi {border-top:3px solid var(--indigo)}
+.kpi:nth-child(2) {border-top-color:var(--ambar)}
+.kpi:nth-child(2) .kpi-valor {color:var(--ambar)}
+.kpi:nth-child(3) {border-top-color:var(--magenta)}
+.kpi:nth-child(3) .kpi-valor {color:var(--magenta)}
+.kpi:nth-child(1) .kpi-valor {color:var(--indigo)}
+.kpi-destacado {background:var(--blanco)}
+.kpi-destacado :is(.kpi-etiqueta,.kpi-pie){color:var(--gris)}
+.btn-principal {background:#234f83;color:white}
+.btn-principal:hover {background:#183d66}
+.form h2,.bienvenida h1 {background:none;color:var(--texto)}
+.soporte-portal a {display:inline-flex;align-items:center;gap:.4rem;padding:.4rem 0;color:var(--azul);text-decoration:underline;text-underline-offset:.2em}
+.soporte-portal svg {width:17px;height:17px;color:#16784c}
+:root[data-theme="dark"] .soporte-portal svg {color:#66d99c}
+.soporte-portal a:focus-visible {outline:2px solid var(--azul);outline-offset:3px}

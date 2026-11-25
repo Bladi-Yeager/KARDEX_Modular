@@ -95,9 +95,10 @@ def historial(db: Session = Depends(get_db), _actor=Depends(require_roles("admin
     return registros(db)
 
 
-def informe_campo(db, inicio, fin):
-    previo = inicio - (fin-inicio+timedelta(days=1))
-    filas = registros(db, previo, fin)
+def informe_campo(db, inicio, fin, previo=None, fin_previo=None):
+    previo = previo or inicio - (fin-inicio+timedelta(days=1))
+    fin_previo = fin_previo or inicio - timedelta(days=1)
+    filas = [f for f in registros(db, previo, fin) if f["fecha"] <= fin_previo or f["fecha"] >= inicio]
     grupos = {}
     for fila in filas:
         if fila["tipo"] != "Cosecha":

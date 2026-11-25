@@ -1,15 +1,15 @@
 <!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dirección · Kardex agrícola</title><style>
 :root {
   color-scheme: light;
-  --canvas:#f2f5f9; --surface:#fff; --subtle:#eaf0f7; --ink:#192d46; --muted:#465971;
-  --line:#c6d1dd; --field-line:#708399; --action:#234b78; --hover:#17385d; --button-ink:#fff;
-  --gain:#164f91; --loss:#9d342f; --negative-bg:#fff4f2; --focus:#2769b3;
+  --canvas:#f6f5f3; --surface:#fff; --subtle:#f1eeee; --ink:#29272a; --muted:#59555b;
+  --line:#d3ced2; --field-line:#708399; --action:#234b78; --hover:#17385d; --button-ink:#fff;
+  --copper:#875112; --gain:#714c7b; --loss:#9d342f; --negative-bg:#fff4f2; --focus:#2769b3;
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --canvas:#101925; --surface:#1a2839; --subtle:#24364b; --ink:#eff4fb; --muted:#bac8d9;
+  --canvas:#1b1a1d; --surface:#272629; --subtle:#343136; --ink:#f5f2f3; --muted:#c6bec5;
   --line:#42566e; --field-line:#8295ab; --action:#b5d4ff; --hover:#d3e5ff; --button-ink:#132942;
-  --gain:#a3ccff; --loss:#ffb0a5; --negative-bg:#36292e; --focus:#9ac5ff;
+  --copper:#f2c48c; --gain:#dfbce7; --loss:#ffb0a5; --negative-bg:#36292e; --focus:#9ac5ff;
 }
 * {box-sizing:border-box}
 [hidden] {display:none!important}
@@ -25,7 +25,7 @@ h1,.summary-grid h2,.reporthead h2 {font-family:Georgia,serif}
 h1 {font-size:clamp(32px,5vw,58px);margin:.15em 0}
 h2 {font-size:24px}
 p {max-width:76ch}
-.hero {color:#fff;background:linear-gradient(112deg,#142a44,#2c4a6e);border-left:5px solid #829dbf;border-radius:16px;padding:clamp(18px,4vw,38px)}
+.hero {color:#fff;background:linear-gradient(112deg,#322a36,#503e51);border-left:5px solid #caa4c8;border-radius:16px;padding:clamp(18px,4vw,38px)}
 button,input,select {font:inherit;padding:9px 13px;border-radius:7px;border:1px solid var(--field-line);color:var(--ink);background:var(--surface)}
 button {cursor:pointer;background:var(--action);border-color:var(--action);color:var(--button-ink)}
 button:hover {background:var(--hover)}
@@ -74,23 +74,34 @@ th {background:var(--subtle);font-weight:800}
   .summary-grid {grid-template-columns:1fr}
   .comparison {gap:8px}
 }
-</style><header><b>Kardex agrícola · Dirección</b><a href="/">Centro de accesos</a><button id="theme" type="button">Tema oscuro</button></header><main><div class="hero"><h1 id="title">Resumen financiero</h1></div><form id="login"><h2>Iniciar sesión</h2><label>Usuario<input name="username" autocomplete="username" required></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label><button>Entrar</button></form><p id="msg" role="status"></p><section id="panel" hidden>
+.day-label {display:grid;gap:4px;max-width:15rem}
+.shortcuts {display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.shortcuts button {background:var(--surface);color:var(--ink);border-color:var(--field-line)}
+.shortcuts button[aria-pressed="true"] {background:var(--action);color:var(--button-ink)}
+a {color:var(--action)}
+.balance.pending {color:var(--copper)}
+article.daily {border-top-color:var(--copper)}
+.tiles>div:nth-child(2) {border-top-color:var(--gain)}
+.tiles>div:nth-child(3) {border-top-color:var(--copper)}
+</style><header><b>Kardex agrícola · Dirección</b><a href="/">Centro de accesos</a><button id="theme" type="button">Tema oscuro</button></header><main><div class="hero"><h1 id="title">Resultados financieros</h1></div><form id="login"><h2>Iniciar sesión</h2><label>Usuario<input name="username" autocomplete="username" required></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label><button>Entrar</button></form><p id="msg" role="status"></p><section id="panel" hidden>
 <div class="tools"><label id="sourceLabel">Informe <select id="source"><option value="real">Datos de la empresa</option><option value="demo">Demostración</option></select></label>
 <button id="reload">Actualizar</button><button id="logout">Cerrar sesión</button></div>
 <div class="summary-grid" id="overview">
-  <article class="monthly"><h2>Resultado del mes</h2><div id="monthOutput" aria-live="polite"></div></article>
-  <article class="daily"><h2>Consulta por fecha</h2>
-    <div class="query"><label>Período<select id="days">
-      <option value="today">Hoy</option><option value="yesterday">Ayer</option><option value="date">Elegir un día</option>
-      <option value="range">Rango personalizado</option><option value="7">Últimos 7 días</option>
-      <option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option></select></label>
-      <label id="fromLabel" hidden><span id="fromTitle">Fecha</span><input type="date" id="from"></label>
-      <label id="toLabel" hidden>Hasta<input type="date" id="to"></label>
-      <button id="apply" hidden>Consultar</button></div>
+  <article class="monthly"><h2>Resultado del mes</h2>
+    <div class="query"><label>Año<select id="year"></select></label><label>Mes<select id="month"></select></label></div>
+    <div id="monthOutput" aria-live="polite"></div>
+  </article>
+  <article class="daily"><h2>Consulta diaria</h2>
+    <label class="day-label">Fecha<input type="date" id="day" min="1900-01-01"></label>
+    <div class="shortcuts" aria-label="Fechas rápidas"><button data-offset="0">Hoy</button><button data-offset="-1">Ayer</button><button data-offset="1">Mañana</button></div>
     <div id="dayOutput" aria-live="polite"></div>
   </article>
 </div>
-<div class="tools"><button id="excel" disabled>Descargar Excel del período</button></div>
+<div class="tools" id="detailsControls">
+  <label>Tablas y Excel <select id="scope"><option value="month">Mes seleccionado</option><option value="day">Día consultado</option><option value="range">Rango personalizado</option></select></label>
+  <label id="rangeFrom" hidden>Desde<input type="date" id="from"></label><label id="rangeTo" hidden>Hasta<input type="date" id="to"></label>
+  <button id="excel" disabled>Descargar Excel del período</button>
+</div>
 <div id="report"></div></section></main><script>
 const $=id=>document.getElementById(id),role='jefe';
 let token=sessionStorage.getItem('consulta_token'),revision=0;
@@ -99,7 +110,7 @@ const bs=n=>n==null?'Pendiente':'Bs '+fmt(n);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function table(cols,rows,empty){return rows.length?'<div class="scroll"><table><thead><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p>'+empty+'</p>'}
 function card(title,body){return '<section class="card"><h2>'+title+'</h2>'+body+'</section>'}
-function end(){revision++;clearDetail();$('monthOutput').replaceChildren();sessionStorage.removeItem('consulta_token');token=null;$('panel').hidden=true;$('report').textContent='';$('login').hidden=false;}
+function end(){sessionStorage.removeItem(filterKey);filters={};revision++;clearDetail();$('monthOutput').replaceChildren();sessionStorage.removeItem('consulta_token');token=null;$('panel').hidden=true;$('report').textContent='';$('login').hidden=false;}
 async function api(url,options={}){const r=await fetch(url,{...options,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})}});if(!r.ok){const e=await r.json().catch(()=>({}));if(r.status===401)end();throw Error(typeof e.detail==='string'?e.detail:'Consulta no disponible')}return r}
 const tile=(label,value,amount=null)=>'<div>'+label+'<strong class="'+(amount>0?'gain':amount<0?'loss':'')+'">'+value+'</strong></div>';
 function informeDemostracion() {
@@ -181,7 +192,7 @@ function draw(d, demo=false){
 }
 
 let displayed = null;
-let monthDay = '';
+
 function balance(p) {
   if (!p.actividad) return '<strong class="balance">Sin actividad</strong>';
   if (p.resultado == null) return '<strong class="balance pending">Resultado pendiente</strong>';
@@ -205,65 +216,115 @@ function renderDay(d) {
     '. Despachos registrados: '+d.despachos+'.'+(p.actividad && p.resultado==null?' Faltan datos de costos para calcular el resultado.':'');
   $('dayOutput').innerHTML='<p class="dates">'+rangeText(p)+'</p>'+balance(p)+'<p>'+esc(sentence)+'</p>';
 }
-function configureDates() {
-  const mode=$('days').value;
-  const calendar=mode==='date'||mode==='range';
-  $('fromLabel').hidden=!calendar;
-  $('toLabel').hidden=mode!=='range';
-  $('apply').hidden=!calendar;
-  $('fromTitle').textContent=mode==='range'?'Desde':'Fecha';
+const filterKey='direccion-calendario-v1';
+let boliviaToday='';
+let filters={};
+try { filters=JSON.parse(sessionStorage.getItem(filterKey)) || {}; } catch { filters={}; }
+
+function saveFilters() {
+  sessionStorage.setItem(filterKey,JSON.stringify(filters));
 }
-function queryForSelection(today) {
-  const mode=$('days').value;
-  if (/^\d+$/.test(mode)) return new URLSearchParams({dias:mode});
-  let start=today, end=today;
-  if (mode==='yesterday') {
-    const day=new Date(today+'T12:00:00Z');
-    day.setUTCDate(day.getUTCDate()-1);
-    start=end=day.toISOString().slice(0,10);
-  } else if (mode==='date'||mode==='range') {
-    start=$('from').value;
-    end=mode==='range'?$('to').value:start;
+function dayOffset(iso,offset) {
+  const d=new Date(iso+'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate()+offset);
+  return d.toISOString().slice(0,10);
+}
+function setupFilters(month) {
+  boliviaToday=month.hoy;
+  const year=Number(boliviaToday.slice(0,4));
+  if (!$('year').options.length) {
+    for(let n=year+10;n>=1900;n--) $('year').add(new Option(n,n));
+    const names=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    names.forEach((name,i)=>$('month').add(new Option(name,i+1)));
   }
-  if (!start || !end || start>end || end>today) throw Error('Elige un rango válido hasta hoy.');
-  return new URLSearchParams({desde:start,hasta:end});
+  $('year').value=month.desde.slice(0,4);
+  $('month').value=Number(month.desde.slice(5,7));
+  $('day').value=filters.day || (month.desde.slice(0,7)===boliviaToday.slice(0,7)?boliviaToday:month.desde);
+  $('scope').value=filters.scope || 'month';
+  $('from').value=filters.from || month.desde;
+  $('to').value=filters.to || month.hasta;
+  $('rangeFrom').hidden=$('rangeTo').hidden=$('scope').value!=='range';
+  for(const button of document.querySelectorAll('[data-offset]')) {
+    button.setAttribute('aria-pressed',String($('day').value===dayOffset(boliviaToday,Number(button.dataset.offset))));
+  }
 }
 function clearDetail() {
   displayed=null;
   $('excel').disabled=true;
   $('report').replaceChildren();
-  $('dayOutput').textContent='';
+}
+async function readPeriod(start,end) {
+  return (await api('/direccion/resumen?'+new URLSearchParams({desde:start,hasta:end}))).json();
 }
 async function load(silent=false) {
   const id=++revision;
   const demo=$('source').value==='demo';
-  $('overview').hidden=demo;
-  $('excel').hidden=demo;
-  $('reload').hidden=demo;
-  if (demo) { clearDetail();draw(informeDemostracion(),true);$('msg').textContent='';return; }
-  if (silent!==true) { clearDetail();$('dayOutput').textContent='Consultando…'; }
+  $('overview').hidden=$('detailsControls').hidden=$('reload').hidden=demo;
+  if (demo) {
+    clearDetail();draw(informeDemostracion(),true);
+    $('msg').textContent='Ejemplo fijo de dos lotes · 27 oct a 25 nov de 2026.';
+    return;
+  }
+  if(silent!==true){
+    clearDetail();$('monthOutput').textContent='Consultando…';$('dayOutput').textContent='Consultando…';
+  }
   try {
-    const month=await (await api('/direccion/mensual')).json();
-    if (id!==revision) return;
-    monthDay=month.actual.hasta;
-    renderMonth(month);
-    for(const key of ['from','to']) {
-      $(key).max=monthDay;
-      if(!$(key).value) $(key).value=monthDay;
+    const query=filters.year && filters.month?'?'+new URLSearchParams({anio:filters.year,mes:filters.month}):'';
+    const month=await (await api('/direccion/mensual'+query)).json();
+    if(id!==revision)return;
+    setupFilters(month);
+    if(month.futuro) $('monthOutput').textContent='Mes futuro · '+fechaCorta(month.desde)+' – '+fechaCorta(month.hasta);
+    else renderMonth(month);
+    const day=$('day').value;
+    let daily=null;
+    if(day>boliviaToday) $('dayOutput').textContent='Fecha futura · '+fechaCorta(day);
+    else {
+      daily=await readPeriod(day,day);
+      if(id!==revision)return;
+      renderDay(daily);
     }
-    const query=queryForSelection(monthDay);
-    const data=await(await api('/direccion/resumen?'+query)).json();
-    if(id!==revision) return;
-    renderDay(data);
-    draw(data);
-    displayed={desde:data.actual.desde,hasta:data.actual.hasta};
-    $('excel').disabled=false;
-    $('msg').textContent='Actualizado a las '+new Date().toLocaleTimeString('es-BO')+' · Actualización automática cada 30 s';
+    const scope=$('scope').value;
+    let details=scope==='day'?daily:month.futuro?null:month;
+    if(scope==='range'){
+      const start=$('from').value,end=$('to').value;
+      if(!start||!end||start>end)throw Error('Selecciona un rango válido.');
+      if(end>boliviaToday)throw Error('El rango incluye una fecha futura.');
+      details=await readPeriod(start,end);
+      if(id!==revision)return;
+    }
+    if(details){
+      draw(details);
+      displayed={desde:details.actual.desde,hasta:details.actual.hasta};
+      $('excel').disabled=false;
+    } else {
+      clearDetail();$('report').textContent='El período seleccionado es futuro.';
+    }
+    $('msg').textContent='Actualizado a las '+new Date().toLocaleTimeString('es-BO',{timeZone:'America/La_Paz'})+' · Actualización automática cada 30 s';
   } catch(error) {
-    if(id!==revision) return;
-    clearDetail();$('msg').textContent=error.message;
+    if(id!==revision)return;
+    clearDetail();
+    for(const key of ['dayOutput','monthOutput']) if($(key).textContent==='Consultando…')$(key).textContent='';
+    $('msg').textContent=error.message;
   }
 }
+function chooseMonth() {
+  filters.year=$('year').value; filters.month=$('month').value;
+  delete filters.day; filters.scope='month';
+  saveFilters();load();
+}
+function chooseDay(day) {
+  if(!day)return;
+  filters.day=day;filters.scope='day';saveFilters();load();
+}
+$('year').onchange=$('month').onchange=chooseMonth;
+$('day').onchange=()=>chooseDay($('day').value);
+for(const button of document.querySelectorAll('[data-offset]')){
+  button.onclick=()=>{if(boliviaToday)chooseDay(dayOffset(boliviaToday,Number(button.dataset.offset)))};
+}
+$('scope').onchange=()=>{filters.scope=$('scope').value;saveFilters();load()};
+$('from').onchange=$('to').onchange=()=>{
+  filters.from=$('from').value;filters.to=$('to').value;saveFilters();load();
+};
 async function openPanel(){const u=await(await api('/auth/me')).json();if(u.rol!==role){end();throw Error('Esta cuenta no corresponde a este acceso.')} $('login').hidden=true;$('panel').hidden=false;await load()}
 $('login').onsubmit=async e=>{e.preventDefault();try{const data=Object.fromEntries(new FormData(e.target));const r=await(await api('/auth/login',{method:'POST',body:JSON.stringify(data)})).json();if(r.usuario.rol!==role)throw Error('Utiliza el acceso de tu rol desde el centro de accesos.');token=r.access_token;sessionStorage.setItem('consulta_token',token);e.target.reset();await openPanel()}catch(err){$('msg').textContent=err.message}};
 $('excel').onclick=async()=>{
@@ -278,8 +339,6 @@ $('excel').onclick=async()=>{
   } catch(e){$('msg').textContent=e.message}
 };
 $('reload').onclick=()=>load();
-$('days').onchange=()=>{configureDates();load()};
-$('apply').onclick=()=>load();
 $('logout').onclick=()=>{end();$('msg').textContent=''};
 $('source').onchange=()=>load();
 function theme(value){

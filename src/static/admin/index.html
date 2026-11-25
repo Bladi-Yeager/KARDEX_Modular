@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kardex Agrícola · Administración del acopio</title>
-  <link rel="stylesheet" href="/admin/static/styles.css?v=azul-20261125">
-  <link rel="stylesheet" href="/inicio/static/acopio.css?v=azul-20261125">
+  <link rel="stylesheet" href="/admin/static/styles.css?v=roles-20261125b">
+  <link rel="stylesheet" href="/inicio/static/acopio.css?v=roles-20261125b">
   <script defer src="/inicio/static/acopio.js?v=finca1"></script>
-  <script defer src="/admin/static/app.js?v=2026.11.25.3"></script>
+  <script defer src="/admin/static/app.js?v=2026.11.25.4"></script>
 </head>
 <body>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -42,7 +42,6 @@
   <div id="app-shell" class="app-shell hidden">
     <aside class="sidebar" id="sidebar">
       <a href="/" class="brand brand-light"><span class="brand-mark" aria-hidden="true">K</span>Kardex Agrícola</a>
-      <button hidden type="button" class="btn btn-soft" id="aviso-solicitudes" data-page="clients" aria-live="polite"></button>
       <nav id="side-nav" aria-label="Administración del acopio"></nav>
       <div class="sidebar-bottom">
         <div class="profile-mini">
@@ -59,6 +58,7 @@
           <div class="breadcrumb">Kardex Agrícola <span>/</span> <b id="page-crumb">Resumen</b></div>
           <div class="top-date" id="today-label"></div>
         </div>
+        <button type="button" class="btn btn-soft" id="aviso-solicitudes" data-page="clients" aria-live="polite">Solicitudes de acceso</button>
       </header>
       <div class="content" id="page-content"></div>
     </main>
