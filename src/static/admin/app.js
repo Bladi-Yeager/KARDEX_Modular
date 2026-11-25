@@ -10,15 +10,14 @@ const PAGES = {
   movements: ["⇄", "Kardex"],
   products: ["◫", "Productos y unidades"],
   finance: ["▥", "Ventas y costos"],
+  journal: ["▤", "Bitácora por parcela"],
   farms: ["⌂", "Chacos y parcelas"],
   workers: ["♙", "Cosecheros"],
   clients: ["◈", "Afiliaciones"],
   users: ["◍", "Cuentas"]
 };
 const NAV = {
-  admin: ["dashboard", "harvests", "lots", "movements", "products", "finance", "farms", "workers", "clients", "users"],
-  jefe: ["dashboard", "harvests", "lots", "movements", "finance", "farms", "users"],
-  soporte: ["dashboard"]
+  admin: ["dashboard", "harvests", "journal", "lots", "movements", "products", "finance", "farms", "workers", "clients", "users"],
 };
 
 let session;
@@ -119,6 +118,7 @@ function params(values) {
 }
 
 const dataPath = {
+  bitacora: "/bitacora",
   fincas: "/inventario/fincas", parcelas: "/inventario/parcelas", cosecheros: "/cosecheros",
   lotes: "/inventario/lotes", cosechas: "/kardex/cosechas", movimientos: "/kardex/movimientos",
   solicitudes: "/auth/solicitudes", clientes: "/portal/api/admin/clientes", cuentas: "/auth/usuarios", diagnostico: "/reportes/diagnostico",
@@ -132,7 +132,8 @@ function dependencies(page) {
     case "lots": return ["fincas", "lotes", "productos"];
     case "movements": return ["fincas", "lotes", "movimientos", "productos"];
     case "products": return ["productos"];
-    case "finance": return admin() ? ["fincas", "finanzas", "lotes"] : ["fincas", "finanzas", "lotes", "resultados"];
+    case "finance": return ["fincas", "finanzas", "lotes"];
+    case "journal": return ["bitacora", "parcelas", "fincas", "cosechas"];
     case "farms": return ["fincas", "parcelas"];
     case "workers": return ["cosecheros"];
     case "clients": return ["fincas", "clientes", "solicitudes"];
@@ -173,6 +174,7 @@ async function navigate(page) {
       filtros = { ...filtros, fecha_desde: cache.resumen.desde, fecha_hasta: cache.resumen.hasta };
     }
     $("#page-content").innerHTML = views[page]();
+    if (page === "journal") bindJournal($("#journal-form"));
     if (page === "harvests" && admin()) bindHarvest($("#harvest-form"));
     if (page === "movements" && admin()) bindMovement($("#movement-form"));
   } catch (error) {
@@ -237,13 +239,8 @@ function chart(semanas, unidad) {
 }
 
 function dashboard() {
-  if (session.rol === "soporte") {
-    const rows = cache.diagnostico.map((r) => [safe(r.componente), pill(safe(r.estado)), safe(r.revision.replace("T", " ").slice(0, 16) + " UTC")]);
-    return head("Diagnóstico del sistema", "Comprueba la conexión de la aplicación y la base de datos.", button("Actualizar", 'data-page="dashboard"')) +
-      panel("Estado de los servicios", table(["Componente", "Estado", "Verificado"], rows), excel("diagnostico"));
-  }
   const r = cache.resumen;
-  const titulo = session.rol === "jefe" ? "Resumen de la empresa" : "Control de cosecha y almacén";
+  const titulo = "Control de cosecha y almacén";
   return `<section class="harvest-hero"><div><h1>${titulo}</h1><p>Recepciones, despachos y existencias de cada producto del acopio.</p></div></section>
     <form class="period-form panel" id="period-form">
       ${field("Desde", input("fecha_desde", 'type="date" required', r.desde))}
@@ -253,7 +250,7 @@ function dashboard() {
     </form>
     <div class="cierre-bar"><h2>Existencias por producto</h2><div>${button("Cierre de hoy", "data-cierre-hoy")} ${excel("existencias")}</div></div>
     <div id="detalle-existencias">${existenciasVista(r.existencias)}</div>
-    ${admin() ? "" : panel("Ventas y costos del período", financeSummary(r.finanzas), button("Resultado por lote", 'data-period-page="finance"'))}`;
+`;
 }
 
 function existenciasVista(productos) {
@@ -275,17 +272,6 @@ function existenciasVista(productos) {
       button("Ver Kardex", `data-kardex-product="${detailProduct}"`))}
     ${panel("Entradas y salidas por semana", chart(activo.semanas, activo.unidad))}
   </div>`;
-}
-
-function financeSummary(finanzas) {
-  const resultado = finanzas.resultado_bs;
-  const resultadoText = resultado == null ? "Datos insuficientes" : "Bs " + fmt(resultado, 2);
-  const tono = resultado == null ? "" : Number(resultado) < 0 ? "negative" : "positive";
-  return `<dl class="finance-totals">
-    <div><dt>Ventas</dt><dd>Bs ${fmt(finanzas.ventas_bs, 2)}</dd></div>
-    <div><dt>Costos</dt><dd>Bs ${fmt(finanzas.costos_bs, 2)}</dd></div>
-    <div><dt>Resultado registrado</dt><dd class="${tono}">${resultadoText}</dd></div>
-  </dl><p class="muted">Incluye la compra total al recibir y los registros financieros del período. Abre el reporte para consultar el margen según las salidas de cada lote.</p>`;
 }
 
 function scopeParams() {
@@ -459,16 +445,6 @@ function farms() {
 }
 
 function finance() {
-  const bs = (valor) => valor == null ? "Pendiente" : "Bs " + fmt(valor, 2);
-  const balances = (cache.resultados || []).map((r) => [
-    safe(r.codigo), safe(r.producto), fmt(r.saldo, 3) + " " + safe(r.unidad),
-    bs(r.ventas_bs), bs(r.compra_bs), bs(r.costo_salidas_bs), bs(r.gastos_bs),
-    r.resultado_bs == null ? "Pendiente" : pill(bs(r.resultado_bs), r.resultado_bs < 0 ? "rose" : ""),
-    safe(r.estado)
-  ]);
-  const resultado = panel("Resultado por lote al " + (scopeTables ? filtros.fecha_hasta : fechaActual()),
-    '<p class="muted">Acumulado desde la recepción. A las ventas se les resta la compra proporcional a las salidas (incluida la merma) y todos los gastos adicionales del lote. El producto en existencia conserva su costo. Las ventas pendientes de registrar todavía no cuentan.</p>' +
-    table(["Lote", "Producto", "Existencia", "Ventas", "Compra total", "Costo de salidas", "Otros gastos", "Resultado", "Estado"], balances), excel("resultado-lotes"));
   const rows = periodoVisible(cache.finanzas, "fecha").slice().reverse().map((r) => {
     const base = [safe(r.fecha), pill(r.tipo === "venta" ? "Venta" : r.tipo === "compra" ? "Compra" : "Gasto", r.tipo === "venta" ? "" : "orange"),
       safe(r.concepto), r.lote_id ? safe(loteCodigo(r.lote_id)) : "Sin lote", r.finca_id ? safe(fincaNombre(r.finca_id)) : "Empresa", "Bs " + fmt(r.monto_bs, 2),
@@ -484,7 +460,7 @@ function finance() {
   ];
   const headers = ["Fecha", "Tipo", "Concepto", "Lote", "Ámbito", "Monto (Bs)", "Estado", "Motivo"];
   if (admin()) headers.push("Acción");
-  return head("Ventas y costos", "Consulta los importes que componen el resultado registrado.", excel("finanzas")) + (admin() ? "" : resultado) +
+  return head("Ventas y costos", "Consulta los importes que componen el resultado registrado.", excel("finanzas")) +
     (admin() ? panel("Nuevo registro", form("finance-form", fields, "Guardar registro", 'data-submit="finance"')) : "") +
     bannerPeriodo() + panel("Registros del período", table(headers, rows));
 }
@@ -542,7 +518,51 @@ function users() {
     panel("Cuentas registradas", table(["Nombre", "Usuario", "Estado", "Acción"], rows));
 }
 
-const views = { dashboard, harvests, lots, movements, products, finance, farms, workers, clients, users };
+function journal() {
+  const parcelas = cache.parcelas.filter(p => p.activo).map(p => [p.id, fincaNombre(p.finca_id) + " · Parcela " + p.numero]);
+  const campos = [
+    field("Parcela", selector("parcela_id", parcelas, "Elegir parcela", "", true)),
+    field("Actividad", selector("tipo", ["Abono","Cosecha","Incidencia"].map(t => [t,t]), "Elegir actividad", "Abono", true)),
+    field("Fecha", input("fecha", 'type="date" required', fechaActual())),
+    field("Abono aplicado", input("insumo", 'maxlength="100"')),
+    field("Dosis aplicada", input("dosis", 'type="number" min="0.001" step="0.001"')),
+    field("Unidad de dosis", selector("unidad_dosis", ["kg/ha","L/ha","g/planta","mL/planta"].map(u => [u,u]), "Elegir unidad")),
+    field("Cosecha recibida", selector("cosecha_id", [], "Elegir cosecha")),
+    field("Superficie cosechada (ha)", input("area_ha", 'type="number" min="0.0001" step="0.0001"')),
+    field("Descripción de la labor o incidencia", input("detalle", 'required minlength="3" maxlength="250"'))
+  ];
+  const filas = cache.bitacora.map(r => [safe(r.fecha),safe(r.parcela),safe(r.tipo),safe(r.detalle),
+    safe(r.insumo ? r.insumo + " · " + r.dosis + " " + r.unidad_dosis : r.lote ? r.lote + " · " + r.area_ha + " ha" : "—")]);
+  return head("Bitácora por parcela","Registra la labor y su fecha. Para medir el rendimiento, vincula una cosecha recibida con su superficie efectiva.",excel("bitacora")) +
+    panel("Nueva anotación",form("journal-form",campos,"Guardar anotación",'data-submit="journal"')) +
+    panel("Historial de campo",table(["Fecha","Parcela","Actividad","Descripción","Aplicación o cosecha"],filas));
+}
+function bindJournal(f) {
+  const e = f.elements;
+  const usadas = new Set(cache.bitacora.map(r => r.cosecha_id));
+  function fechaCosecha() {
+    const seleccion = cache.cosechas.find(c => c.id === Number(e.cosecha_id.value));
+    if (seleccion) e.fecha.value = seleccion.fecha;
+  }
+  function opciones() {
+    const filas = cache.cosechas.filter(c => c.parcela_id === Number(e.parcela_id.value) && c.recibida != null && !c.borrador && !usadas.has(c.id));
+    e.cosecha_id.replaceChildren(new Option(filas.length ? "Elegir cosecha" : "Sin recepciones disponibles", ""));
+    filas.forEach(c => e.cosecha_id.add(new Option(c.fecha + " · " + c.producto + " · #" + c.id, c.id)));
+  }
+  function mostrar() {
+    const cosecha = e.tipo.value === "Cosecha";
+    for (const [nombre,visible] of Object.entries({insumo:e.tipo.value==="Abono",dosis:e.tipo.value==="Abono",unidad_dosis:e.tipo.value==="Abono",cosecha_id:cosecha,area_ha:cosecha})) {
+      const control=e[nombre]; control.disabled=!visible; control.required=visible;
+      control.closest("label").hidden=!visible;
+    }
+    e.fecha.readOnly=cosecha;
+    if(cosecha) opciones();
+  }
+  e.tipo.onchange=mostrar; e.parcela_id.onchange=opciones; e.cosecha_id.onchange=fechaCosecha; mostrar();
+}
+
+
+const views = { journal, dashboard, harvests, lots, movements, products, finance, farms, workers, clients, users };
 
 function openDialog(title, content) {
   const dialog = $("#action-dialog");
@@ -609,6 +629,7 @@ function reverse(id, finance = false) {
 }
 
 const endpoints = {
+  journal: "/bitacora",
   farm: "/inventario/fincas", plot: "/inventario/parcelas", worker: "/cosecheros",
   harvest: "/kardex/cosechas", movement: "/kardex/movimientos",
   user: "/auth/usuarios", assign: "/portal/api/admin/asignar-finca", finance: "/finanzas",
@@ -769,6 +790,11 @@ $("#login-form").addEventListener("submit", async (event) => {
       location.assign("/portal/panel");
       return;
     }
+    if (["jefe", "soporte"].includes(data.usuario.rol)) {
+      sessionStorage.setItem("consulta_token", data.access_token);
+      location.replace("/" + data.usuario.rol);
+      return;
+    }
     if (!NAV[data.usuario.rol]) {
       toast("Entra con esa cuenta desde el portal del productor.", true);
       return;
@@ -789,6 +815,12 @@ $("#login-form").addEventListener("submit", async (event) => {
   if (!token) return;
   try {
     session = await api("/auth/me");
+    if (["jefe", "soporte"].includes(session.rol)) {
+      sessionStorage.setItem("consulta_token", token);
+      localStorage.removeItem(TOKEN_KEY);
+      location.replace("/" + session.rol);
+      return;
+    }
     if (NAV[session.rol]) showApp();
     else logout();
   } catch { logout(); }

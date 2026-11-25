@@ -40,7 +40,7 @@ class OperacionTest(unittest.IsolatedAsyncioTestCase):
         data_usuario = lambda nombre: {"username": nombre, "password": password, "nombre_completo": nombre}
         with SessionLocal() as db:
             auth = AuthService(UsuarioRepositoryImpl(db))
-            for nombre, rol in [("jefe-pruebas", "jefe"), ("soporte-pruebas", "soporte")]:
+            for nombre, rol in [("jefe-pruebas", "jefe"), ("soporte-pruebas", "soporte"), ("operador","admin")]:
                 auth.provisionar(ClienteRegister(**data_usuario(nombre)), rol)
 
         async def login(nombre):
@@ -60,7 +60,7 @@ class OperacionTest(unittest.IsolatedAsyncioTestCase):
 
         jefe = await login("jefe-pruebas")
         soporte = await login("soporte-pruebas")
-        await enviar("/auth/usuarios", jefe, dict(data_usuario("operador"), rol="admin"))
+        await enviar("/auth/usuarios", jefe, dict(data_usuario("otro-operador"), rol="admin"), 403)
         admin = await login("operador")
         productor_a = await enviar("/auth/usuarios", admin, dict(data_usuario("productor-a"), rol="cliente"))
         productor_b = await enviar("/auth/register", {}, data_usuario("productor-b"), 200)
@@ -160,6 +160,9 @@ class OperacionTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(celda.value, "=Dato escrito")
         self.assertEqual(celda.data_type, "s")
 
+        await leer("/direccion/resumen", admin, 403)
+        informe = (await leer("/direccion/resumen", jefe)).json()
+        self.assertEqual(next(l["resultado"] for l in informe["actual"]["lotes"] if l["codigo"]=="PR-025"), 58)
         lotes_fin = (await leer("/finanzas/lotes", jefe)).json()
         balance = next(lote for lote in lotes_fin if lote["codigo"] == "PR-025")
         self.assertEqual((balance["saldo"], balance["costo_salidas_bs"], balance["resultado_bs"]), (9, 32, 58))
@@ -241,6 +244,30 @@ class OperacionTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([(m["producto"], m["cantidad_saldo"]) for m in historia.json()], [("Histórico sin clasificar", 7)])
         modernas = await leer(f"/kardex/movimientos?producto_id={pina}", jefe)
         self.assertEqual(modernas.json()[-1]["cantidad_saldo"], 89)
+
+
+        parcela = await enviar("/inventario/parcelas", admin, {"numero": 17, "finca_id": fincas[0], "superficie_ha": 2}, 200)
+        base = {"fecha": str(fecha), "parcela_id": parcela["id"], "detalle": "Registro de campo"}
+        await enviar("/bitacora", jefe, dict(base, tipo="Incidencia"), 403)
+        await leer("/bitacora", pa, 403)
+        await enviar("/bitacora", admin, dict(base, tipo="Abono"), 422)
+        await enviar("/bitacora", admin, dict(base, tipo="Abono", insumo="Compost", dosis=25, unidad_dosis="kg/ha"))
+        await enviar("/bitacora", admin, dict(base, tipo="Incidencia", detalle="Lluvia intensa"))
+        for dias, cantidad, area in ((0, 90, 1), (8, 100, 2)):
+            dia = str(fecha - timedelta(days=dias))
+            c = await enviar("/kardex/cosechas", admin, {"fecha": dia, "finca_id": fincas[0],
+                "parcela_id": parcela["id"], "cosechero_id": cosechero["id"], "producto_id": pina, "cantidad": cantidad})
+            await enviar(f"/kardex/cosechas/{c['id']}/recepcion", admin, {"fecha": dia, "codigo": f"CAMPO-{dias}"})
+            anotacion = dict(base, tipo="Cosecha", fecha=dia, cosecha_id=c["id"], area_ha=area)
+            await enviar("/bitacora", admin, dict(anotacion, area_ha=3), 422)
+            await enviar("/bitacora", admin, anotacion)
+            await enviar("/bitacora", admin, anotacion, 409)
+        j = (await leer("/direccion/resumen?dias=7", jefe)).json()["campo"]
+        r = j["rendimientos"][0]
+        self.assertEqual((r["actual"], r["anterior"], r["cambio_pct"]), (90, 50, 80))
+        self.assertEqual(len(j["actividades"]), 3)
+        await leer("/reportes/excel/bitacora", admin)
+
 
 
 if __name__ == "__main__":

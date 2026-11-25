@@ -15,7 +15,7 @@ from src.modules.auth.infrastructure.repository_impl import UsuarioRepositoryImp
 
 def main():
     parser = ArgumentParser(description="Crear una cuenta de jefe o soporte técnico.")
-    parser.add_argument("rol", choices=("jefe", "soporte"))
+    parser.add_argument("rol", choices=("jefe", "soporte", "admin"))
     parser.add_argument("usuario")
     parser.add_argument("nombre")
     args = parser.parse_args()

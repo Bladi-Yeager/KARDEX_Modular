@@ -6,6 +6,7 @@ from fastapi.responses import Response
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from src.modules.inventory.bitacora import registros as registros_campo
 from src.core.database import get_db
 from src.core.fechas import hoy_bolivia
 from src.modules.auth.domain.models import rol_efectivo
@@ -140,6 +141,11 @@ def _datos_excel(db, actor, tabla, finca_id, lote_id, confirmadas):
             return columnas, [{"producto": p.nombre, "unidad": p.unidad} for p in filas]
         if tabla in ("fincas", "parcelas", "lotes", "kardex", "cosechas"):
             return _datos_empresa(db, tabla, finca_id, lote_id, confirmadas or actor.rol == "jefe")
+        if tabla == "bitacora":
+            columnas = (("fecha","Fecha"),("parcela","Parcela"),("tipo","Actividad"),("detalle","Descripción"),
+                        ("insumo","Abono"),("dosis","Dosis"),("unidad_dosis","Unidad de dosis"),("lote","Lote"),
+                        ("area_ha","Superficie cosechada (ha)"),("aceptada","Aceptada"),("unidad","Unidad"))
+            return columnas, registros_campo(db)
         if tabla == "cuentas":
             rol = "admin" if actor.rol == "jefe" else "cliente"
             return CUENTAS, [dict(vars(u), rol=rol) for u in UsuarioRepositoryImpl(db).list_all()

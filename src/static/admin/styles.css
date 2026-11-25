@@ -509,3 +509,5 @@ button.metric:hover{border-color:var(--metric);transform:translateY(-2px)}
 @media(prefers-reduced-motion:reduce){.chart-fill{animation:none}button.metric:hover{transform:none}}
 
 #aviso-solicitudes[hidden] { display: none; }
+
+#journal-form .field[hidden]{display:none}

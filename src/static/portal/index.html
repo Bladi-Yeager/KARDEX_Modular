@@ -175,6 +175,11 @@ document.getElementById("form-login").addEventListener("submit", async (e) => {
       })
     });
     const datos = await leerRespuesta(resp);
+    if (["jefe", "soporte"].includes(datos.usuario.rol)) {
+      sessionStorage.setItem("consulta_token", datos.access_token);
+      location.replace("/" + datos.usuario.rol);
+      return;
+    }
     if (datos.usuario.rol !== "cliente") {
       localStorage.setItem("kardex_admin_token", datos.access_token);
       location.assign("/admin");

@@ -1,4 +1,6 @@
 from pathlib import Path
+from src.modules.inventory.bitacora import router as bitacora_router
+from src.modules.reportes.direccion import router as direccion_router
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
@@ -23,7 +25,7 @@ from src.modules.reportes.finanzas import router as finanzas_router
 
 app = FastAPI(
     title="Kardex Agricola API",
-    version="3.3.0",
+    version="3.5.0",
     description=(
         "Sistema Kardex Agricola (monolito modular - DDD). "
         "Incluye el portal de solo lectura para el productor."
@@ -43,6 +45,8 @@ if settings.DEMO_DATA:
 async def error_kardex(_request, error):
     return JSONResponse(status_code=error.status, content={"detail": str(error)})
 
+app.include_router(bitacora_router)
+app.include_router(direccion_router)
 app.include_router(auth_router)
 app.include_router(supliers_router)
 app.include_router(inventory_router)
@@ -88,3 +92,13 @@ def admin_panel():
 @app.get("/health", tags=["sistema"])
 def health():
     return {"msg": "Kardex Agricola API funcionando", "version": app.version}
+
+
+@app.get("/jefe", include_in_schema=False)
+def panel_jefe():
+    return FileResponse(STATIC_DIR / "direccion" / "index.html")
+
+
+@app.get("/soporte", include_in_schema=False)
+def panel_soporte():
+    return FileResponse(STATIC_DIR / "direccion" / "index.html")

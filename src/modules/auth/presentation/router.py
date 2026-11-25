@@ -15,7 +15,7 @@ from src.modules.auth.infrastructure.repository_impl import UsuarioRepositoryImp
 from src.modules.auth.presentation.dependencies import get_current_user, require_roles
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-gestiona_cuentas = require_roles("jefe", "admin")
+gestiona_cuentas = require_roles("admin")
 
 
 class EstadoCuenta(BaseModel):

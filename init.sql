@@ -179,3 +179,12 @@ CREATE TABLE IF NOT EXISTS registros_financieros (
     FOREIGN KEY (registrado_por) REFERENCES usuarios(id),
     FOREIGN KEY (anulado_por) REFERENCES usuarios(id)
 );
+
+CREATE TABLE IF NOT EXISTS bitacora_parcela (
+    id INT AUTO_INCREMENT PRIMARY KEY, parcela_id INT NOT NULL, fecha DATE NOT NULL,
+    tipo VARCHAR(16) NOT NULL, detalle VARCHAR(250) NOT NULL, insumo VARCHAR(100),
+    dosis DECIMAL(12,3), unidad_dosis VARCHAR(16), cosecha_id INT UNIQUE,
+    area_ha DECIMAL(10,4), autor_id INT NOT NULL, INDEX (fecha),
+    FOREIGN KEY (parcela_id) REFERENCES parcelas(id), FOREIGN KEY (cosecha_id) REFERENCES cosechas(id),
+    FOREIGN KEY (autor_id) REFERENCES usuarios(id)
+);

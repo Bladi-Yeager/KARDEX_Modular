@@ -67,13 +67,13 @@ class AuthService:
 
     def crear_usuario(self, data, rol_actor: str) -> Usuario:
         rol = (data.rol or "cliente").strip().lower()
-        permitido = {"jefe": "admin", "admin": "cliente"}.get(rol_actor)
+        permitido = {"admin": "cliente"}.get(rol_actor)
         if rol != permitido:
             raise RolInvalido(data.rol)
         return self._crear(data, rol)
 
     def provisionar(self, data, rol: str) -> Usuario:
-        if rol not in ("jefe", "soporte"):
+        if rol not in ("jefe", "soporte", "admin"):
             raise RolInvalido(rol)
         return self._crear(data, rol)
 
