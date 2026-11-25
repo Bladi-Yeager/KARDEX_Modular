@@ -147,7 +147,7 @@ def registrar(data: RegistroCreate, db: Session = Depends(get_db), actor=Depends
         if lote is None or data.fecha < lote.fecha_ingreso:
             raise HTTPException(422, "El lote debe existir en la fecha del registro.")
         if data.finca_id is not None and data.finca_id != lote.finca_id:
-            raise HTTPException(422, "El chaco indicado no corresponde al lote.")
+            raise HTTPException(422, "La finca indicada no corresponde al lote.")
         data.finca_id = lote.finca_id
         cosecha = db.get(CosechaDB, lote.cosecha_id) if lote.cosecha_id else None
         if data.tipo in ("venta", "compra") and cosecha and cosecha.cantidad == 0:

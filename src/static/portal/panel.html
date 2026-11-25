@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0b1024">
 <title>Mi Kardex · Portal del trabajador</title>
-<link rel="stylesheet" href="/portal/static/estilos.css?v=chaco2">
+<link rel="stylesheet" href="/portal/static/estilos.css?v=azul-20261125">
 <script>
   /* Aplica el tema guardado antes de pintar, para que no parpadee. */
   (function () {
@@ -16,8 +16,8 @@
     document.documentElement.setAttribute("data-theme", t);
   })();
 </script>
-  <link rel="stylesheet" href="/inicio/static/acopio.css">
-  <script defer src="/inicio/static/acopio.js"></script>
+  <link rel="stylesheet" href="/inicio/static/acopio.css?v=azul-20261125">
+  <script defer src="/inicio/static/acopio.js?v=finca1"></script>
 </head>
 <body class="panel-body">
 
@@ -61,14 +61,14 @@
 
   <!-- Aviso si no tiene datos -->
   <div class="aviso oculto" id="aviso-sin-datos">
-    <strong>Aún no tienes chacos asignados.</strong>
-    <span>Pide al administrador que vincule tus chacos a tu cuenta para consultar tu Kardex.</span>
+    <strong>Aún no tienes fincas asignadas.</strong>
+    <span>Pide al administrador que vincule tus fincas a tu cuenta para consultar tu Kardex.</span>
   </div>
 
   <!-- Indicadores -->
   <section class="kpis">
     <article class="kpi">
-      <span class="kpi-etiqueta">Mis chacos</span>
+      <span class="kpi-etiqueta">Mis fincas</span>
       <strong class="kpi-valor" id="kpi-fincas">0</strong>
       <span class="kpi-pie" id="kpi-hectareas">0 ha en total</span>
     </article>
@@ -91,7 +91,7 @@
 
   <!-- Pestañas -->
   <nav class="secciones" id="secciones">
-    <button class="seccion activo" data-vista="fincas">Mis chacos</button>
+    <button class="seccion activo" data-vista="fincas">Mis fincas</button>
     <button class="seccion" data-vista="cosechas">Mis entregas</button>
     <button class="seccion" data-vista="kardex">Mi Kardex</button>
     <button class="seccion" data-vista="lotes">Mis lotes</button>
@@ -121,7 +121,7 @@
   <!-- Vistas -->
   <section class="tabla-caja">
     <div class="tabla-encabezado">
-      <h2 id="tabla-titulo">Mis chacos</h2>
+      <h2 id="tabla-titulo">Mis fincas</h2>
       <span class="muted" id="tabla-conteo"></span>
     </div>
 
@@ -141,7 +141,15 @@
     Esta pantalla es de <strong>solo lectura</strong>. Si algún dato no es correcto,
     comunícate con el encargado del acopio.
   </p>
-<p class="soporte-portal"><a href="https://wa.me/59167559408" target="_blank" rel="noopener noreferrer">Soporte técnico por WhatsApp</a></p>
+<p class="soporte-portal">
+  <a href="https://wa.me/59167559408" target="_blank" rel="noopener noreferrer" aria-label="Soporte técnico por WhatsApp">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="currentColor">
+      <path fill-rule="evenodd" d="M20.5 3.5a11.8 11.8 0 0 0-18.6 14.2L.3 23.8l6.2-1.6A11.8 11.8 0 0 0 20.5 3.5ZM12 21.4a9.7 9.7 0 0 1-5-1.4l-.4-.2-3.5.9.9-3.4-.2-.4A9.7 9.7 0 1 1 12 21.4Z"/>
+      <path d="M8.3 6.3c-.2-.5-.4-.5-.7-.5h-.7c-.3 0-.6.1-.8.4-.7.7-1.1 1.6-1 2.6 0 1.5 1.1 3 1.3 3.2.2.2 2.2 3.5 5.4 4.8 2.6 1.1 3.2.9 3.8.8.6-.1 1.9-.8 2.2-1.5.3-.7.3-1.3.2-1.4-.1-.2-.3-.2-.6-.4l-2.3-1.1c-.3-.1-.5-.2-.7.2l-1.1 1.3c-.2.2-.4.2-.7.1a9 9 0 0 1-4.3-3.7c-.2-.3 0-.5.1-.6l.7-.9c.2-.2.3-.4.4-.6.1-.2 0-.4 0-.6Z"/>
+    </svg>
+    Soporte técnico
+  </a>
+</p>
 </main>
 
 <script>
@@ -266,7 +274,7 @@ function render() {
   if (vistaActual === "fincas") {
     filtros.classList.add("oculto");
     const filas = datos.fincas;
-    pintarTabla("Mis chacos", [
+    pintarTabla("Mis fincas", [
       { titulo: "N°", render: f => esc(f.numero) },
       { titulo: "Nombre", render: f => esc(f.nombre || "—") },
       { titulo: "Ubicación", render: f => esc(f.ubicacion || "—") },
@@ -282,10 +290,15 @@ function render() {
     const filas = aplicarFiltros(datos.cosechas, ["finca", "parcela", "cosechero", "producto", "observacion"]);
     pintarTabla("Mis entregas", [
       { titulo: "Fecha", render: f => fmtFecha(f.fecha_recepcion || f.fecha) },
-      { titulo: "Chaco", render: f => esc(f.finca || "—") },
+      { titulo: "Finca", render: f => esc(f.finca || "—") },
       { titulo: "Producto", render: f => esc(f.producto) },
-      { titulo: "Cantidad registrada", render: f => acopio.cantidad(f.cantidad, f.unidad) },
-      { titulo: "Rechazada", render: f => acopio.cantidad(f.rechazada, f.unidad) },
+      { titulo: "Recibido", render: f => f.recibida == null ? "Sin dato" : acopio.cantidad(f.recibida, f.unidad) },
+      { titulo: "Aceptado", render: f => acopio.cantidad(f.cantidad, f.unidad) },
+      { titulo: "Rechazado", render: f => f.rechazada == null ? "Sin dato" : acopio.cantidad(f.rechazada, f.unidad) },
+      { titulo: "Motivo del rechazo", render: f => {
+        if (f.rechazada === 0) return "Sin rechazo";
+        return esc(f.motivo_rechazo?.trim() || "Sin dato");
+      } },
       { titulo: "Monto (Bs)", render: f => `<span class="num">${fmtNum(f.monto_bs, 2)}</span>` },
       { titulo: "Comprobante", render: f => f.recibida == null ? "—" :
         `<button class="btn-suave" type="button" data-recibo="${f.id}">Ver comprobante</button>` }
@@ -311,7 +324,7 @@ function render() {
     const filas = aplicarFiltros(datos.lotes, ["codigo", "finca", "producto", "detalle"]);
     pintarTabla("Mis lotes", [
       { titulo: "Código", render: f => esc(f.codigo) },
-      { titulo: "Chaco", render: f => esc(f.finca || "—") },
+      { titulo: "Finca", render: f => esc(f.finca || "—") },
       { titulo: "Producto", render: f => esc(f.producto) },
       { titulo: "Fecha de ingreso", render: f => fmtFecha(f.fecha_ingreso) },
       { titulo: "Detalle", render: f => esc(f.detalle || "—") },
@@ -345,7 +358,7 @@ function pintarResumen(r) {
   document.getElementById("aviso-sin-datos").classList.toggle("oculto", r.tiene_datos);
   document.getElementById("subtitulo").textContent = r.tiene_datos
     ? "Este es el resumen de tu producción."
-    : "Todavía no hay movimientos registrados en tus chacos.";
+    : "Todavía no hay movimientos registrados en tus fincas.";
 }
 
 document.getElementById("producto-saldos-lista").addEventListener("click", (e) => {

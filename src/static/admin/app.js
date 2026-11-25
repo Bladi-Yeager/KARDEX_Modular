@@ -11,7 +11,7 @@ const PAGES = {
   products: ["◫", "Productos y unidades"],
   finance: ["▥", "Ventas y costos"],
   journal: ["▤", "Bitácora por parcela"],
-  farms: ["⌂", "Chacos y parcelas"],
+  farms: ["⌂", "Fincas y parcelas"],
   workers: ["♙", "Cosecheros"],
   clients: ["◈", "Afiliaciones"],
   users: ["◍", "Cuentas"]
@@ -245,7 +245,7 @@ function dashboard() {
     <form class="period-form panel" id="period-form">
       ${field("Desde", input("fecha_desde", 'type="date" required', r.desde))}
       ${field("Hasta", input("fecha_hasta", 'type="date" required', r.hasta))}
-      ${field("Finca o chaco", selector("finca_id", fincaItems(), "Todos los chacos", filtros.finca_id))}
+      ${field("Finca", selector("finca_id", fincaItems(), "Todas las fincas", filtros.finca_id))}
       <button class="btn btn-primary" type="submit">Aplicar filtros</button>
     </form>
     <div class="cierre-bar"><h2>Existencias por producto</h2><div>${button("Cierre de hoy", "data-cierre-hoy")} ${excel("existencias")}</div></div>
@@ -303,7 +303,7 @@ function cosechaFields(row = {}) {
   return [
     field("Fecha", input("fecha", 'type="date" required', row.fecha || fechaActual())),
     field("Cosechero", selector("cosechero_id", cache.cosecheros.filter((u) => u.activo).map((u) => [u.id, u.nombre]), "Elegir cosechero", row.cosechero_id, true)),
-    field("Finca o chaco", selector("finca_id", fincaItems(true), "Elegir chaco", row.finca_id, true)),
+    field("Finca", selector("finca_id", fincaItems(true), "Elegir finca", row.finca_id, true)),
     field("Parcela", selector("parcela_id", [], "Sin parcela", row.parcela_id)),
     field("Producto", selector("producto_id", cache.productos.map((p) => [p.id, p.nombre + " · " + acopio.etiqueta(p.unidad)]),
       "Elegir producto", row.producto_id, true)),
@@ -323,7 +323,7 @@ function harvests() {
     return ["#" + c.id, safe(c.fecha_recepcion || c.fecha), safe(fincaNombre(c.finca_id)), safe(c.producto),
       acopio.cantidad(c.cantidad, c.unidad), acopio.cantidad(c.rechazada, c.unidad), "Bs " + fmt(c.monto_bs, 2), estado, acciones];
   });
-  const headers = ["Cosecha", "Fecha", "Chaco", "Producto", "Cantidad registrada", "Rechazada", "Monto registrado", "Recepción", "Acciones"];
+  const headers = ["Cosecha", "Fecha", "Finca", "Producto", "Cantidad registrada", "Rechazada", "Monto registrado", "Recepción", "Acciones"];
   return head("Cosechas y recepciones", "Registra el origen del producto y confirma cuánto ingresa al acopio.", excel("cosechas")) +
     (admin() ? panel("Nueva cosecha", form("harvest-form", cosechaFields(), "Guardar borrador", 'data-submit="harvest"')) : "") +
     bannerPeriodo() + panel("Registro de cosechas", table(headers, rows), filtroProducto(cache.cosechas));
@@ -372,7 +372,7 @@ function lots() {
   ]);
   return head("Lotes", "La recepción vincula el lote con la finca, la cosecha y la entrada al almacén.", excel("lotes")) +
     (admin() ? button("Ir a recepción de cosechas", 'data-page="harvests"', "primary") : "") +
-    bannerPeriodo() + panel("Lotes de ingreso", table(["Código", "Producto", "Unidad", "Fecha de ingreso", "Chaco", "Cosecha de origen", "Detalle", "Kardex"], rows), filtroProducto(cache.lotes));
+    bannerPeriodo() + panel("Lotes de ingreso", table(["Código", "Producto", "Unidad", "Fecha de ingreso", "Finca", "Cosecha de origen", "Detalle", "Kardex"], rows), filtroProducto(cache.lotes));
 }
 
 function movements() {
@@ -394,12 +394,12 @@ function movements() {
     field('<span class="cantidad-label">Cantidad</span>', input("cantidad", 'type="number" min="0.001" step="0.001" required')),
     field("Documento", input("doc", 'maxlength="30"')),
     field("Observación o motivo de merma", input("observacion", 'maxlength="200"')),
-    field("Chaco para lote sin origen", selector("finca_id", fincaItems(true), "Usar el chaco del lote"))
+    field("Finca para lote sin origen", selector("finca_id", fincaItems(true), "Usar la finca del lote"))
   ];
-  const headers = ["Fecha", "Producto", "Movimiento", "Chaco", "Lote", "Entrada", "Salida", "Saldo", "Documento"];
+  const headers = ["Fecha", "Producto", "Movimiento", "Finca", "Lote", "Entrada", "Salida", "Saldo", "Documento"];
   if (admin()) headers.push("Acción");
   const descripcion = scopeLot ? `Saldo e historial del lote ${safe(loteCodigo(scopeLot))}.` :
-    scopeTables && filtros.finca_id ? "Saldo por producto dentro del chaco seleccionado." : "Cada saldo se calcula para su producto y unidad.";
+    scopeTables && filtros.finca_id ? "Saldo por producto dentro de la finca seleccionada." : "Cada saldo se calcula para su producto y unidad.";
   return head("Kardex", descripcion, excel("kardex")) +
     (admin() ? panel("Registrar un movimiento", form("movement-form", fields, "Guardar movimiento", 'data-submit="movement"')) : "") +
     (scopeLot ? button("Volver al listado de lotes", 'data-page="lots"') : "") +
@@ -438,10 +438,10 @@ function farms() {
     field("Número de parcela", input("numero", 'type="number" min="1" required')),
     field("Superficie (ha)", input("superficie_ha", 'type="number" min="0" step="0.01"'))
   ], "Guardar parcela", 'data-submit="plot"');
-  return head("Chacos y parcelas", "Identifica el terreno de origen de cada cosecha.") +
-    (admin() ? `<div class="grid-two">${panel("Nuevo chaco", farmForm)}${panel("Nueva parcela", plotForm)}</div>` : "") +
-    panel("Fincas o chacos", table(["Número", "Nombre", "Ubicación"], farmRows), excel("fincas")) +
-    panel("Parcelas", table(["Chaco", "Número", "Superficie (ha)"], plotRows), excel("parcelas"));
+  return head("Fincas y parcelas", "Identifica el terreno de origen de cada cosecha.") +
+    (admin() ? `<div class="grid-two">${panel("Nueva finca", farmForm)}${panel("Nueva parcela", plotForm)}</div>` : "") +
+    panel("Fincas", table(["Número", "Nombre", "Ubicación"], farmRows), excel("fincas")) +
+    panel("Parcelas", table(["Finca", "Número", "Superficie (ha)"], plotRows), excel("parcelas"));
 }
 
 function finance() {
@@ -486,7 +486,7 @@ function clients() {
   const libres = cache.fincas.filter(f => f.activo && f.usuario_id == null).map(f => [f.id, fincaNombre(f.id)]);
   const pendientes = cache.solicitudes.map(u => [
     safe(u.nombre_completo), safe(u.username),
-    form("aprobar-" + u.id, [field("Chaco sin asignar", selector("finca_id", libres, "Selecciona el chaco", "", true))],
+    form("aprobar-" + u.id, [field("Finca sin asignar", selector("finca_id", libres, "Selecciona la finca", "", true))],
       "Aprobar acceso", `data-submit="approve" data-id="${u.id}"`)
   ]);
   const rows = cache.clientes.map((c) => [safe(c.nombre_completo), safe(c.username), c.fincas.map((f) =>

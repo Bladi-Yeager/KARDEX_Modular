@@ -19,7 +19,7 @@
       document.body.append(dialog);
     }
     const campos = [
-      ["Recepción", "#" + datos.id], ["Fecha", datos.fecha_recepcion], ["Finca o chaco", datos.finca],
+      ["Recepción", "#" + datos.id], ["Fecha", datos.fecha_recepcion], ["Finca", datos.finca],
       ["Cosechero", datos.cosechero], ["Producto", datos.producto], ["Lote", datos.codigo_lote],
       ["Documento", datos.documento_recepcion], ["Recibida", cantidad(datos.recibida, datos.unidad)],
       ["Rechazada", cantidad(datos.rechazada, datos.unidad)], ["Aceptada", cantidad(datos.cantidad, datos.unidad)],

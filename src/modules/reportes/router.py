@@ -25,17 +25,17 @@ from src.modules.supliers.infrastructure.repository_impl import CosecheroReposit
 router = APIRouter(prefix="/reportes", tags=["reportes"])
 operador = require_roles("admin")
 
-FINCAS = (("numero", "Número"), ("nombre", "Finca o chaco"), ("ubicacion", "Ubicación"))
-COSECHAS = (("fecha", "Fecha de cosecha"), ("fecha_recepcion", "Fecha de recepción"), ("finca", "Finca o chaco"),
+FINCAS = (("numero", "Número"), ("nombre", "Finca"), ("ubicacion", "Ubicación"))
+COSECHAS = (("fecha", "Fecha de cosecha"), ("fecha_recepcion", "Fecha de recepción"), ("finca", "Finca"),
             ("parcela", "Parcela"), ("cosechero", "Cosechero"), ("producto", "Producto"), ("unidad", "Unidad"),
             ("codigo_lote", "Lote"), ("documento_recepcion", "Documento"), ("recibida", "Recibida"),
             ("rechazada", "Rechazada"), ("cantidad", "Cantidad registrada"), ("motivo_rechazo", "Motivo del rechazo"),
             ("unidad_secundaria", "Unidad adicional"), ("cantidad_secundaria", "Medición adicional"),
             ("monto_bs", "Monto registrado (Bs)"), ("observacion", "Observación"))
-LOTES = (("codigo", "Código de lote"), ("finca", "Finca o chaco"), ("fecha_ingreso", "Fecha de ingreso"),
+LOTES = (("codigo", "Código de lote"), ("finca", "Finca"), ("fecha_ingreso", "Fecha de ingreso"),
          ("producto", "Producto"), ("unidad", "Unidad"), ("detalle", "Detalle"), ("cosecha_id", "N.º de cosecha"))
 KARDEX = (("fecha", "Fecha"), ("detalle", "Detalle"), ("tipo", "Tipo"), ("doc", "Documento"),
-          ("finca", "Finca o chaco"), ("lote", "Lote"), ("producto", "Producto"), ("unidad", "Unidad"),
+          ("finca", "Finca"), ("lote", "Lote"), ("producto", "Producto"), ("unidad", "Unidad"),
           ("cantidad_entrada", "Entrada"), ("cantidad_salida", "Salida"), ("cantidad_saldo", "Saldo"),
           ("observacion", "Observación"))
 EXISTENCIAS = (("desde", "Inicio"), ("hasta", "Corte"), ("producto", "Producto"), ("unidad", "Unidad"),

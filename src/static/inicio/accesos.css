@@ -1,15 +1,17 @@
 * { box-sizing: border-box; }
-body { margin: 0; color: #202e36; background: #faf8f2; font: 1rem/1.5 "DM Sans", system-ui, sans-serif; }
+body { margin: 0; color: #142942; background: #f8fafc; font: 700 1rem/1.5 "DM Sans", system-ui, sans-serif; }
 header, main { max-width: 64rem; margin: auto; padding: 1.35rem clamp(1rem, 5vw, 3.5rem); }
-header { border-bottom: 1px solid #d7d6cb; font-weight: 750; }
-h1 { font: 500 clamp(2rem, 5vw, 3.8rem)/1.08 Georgia, serif; margin: .45em 0 .65em; }
+header { border-bottom: 1px solid #c2d3e3; font-weight: 750; }
+h1 { font: 800 clamp(2rem, 5vw, 3.8rem)/1.08 Georgia, serif; margin: .45em 0 .65em; }
 nav { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
-nav a { display: flex; align-items: flex-end; justify-content: space-between; color: white; padding: clamp(1rem,3vw,1.8rem); min-height: clamp(9rem,20vw,13rem); border-radius: 1rem; border-bottom: 5px solid var(--accent); background: linear-gradient(0deg,var(--shade),transparent 160%), var(--photo) center/cover; font-size: clamp(1.5rem,3vw,2.35rem); font-weight: 650; text-decoration: none; }
-nav a::after { content: "↗"; font-weight: 400; }
-nav a:focus-visible { outline: 3px solid #142d49; outline-offset: 4px; }
-nav a:hover { box-shadow: 0 5px 16px #192e422e; }
-.trabajador { --shade: #103e32; --accent: #77ac75; --photo: url('img/productor.jpg'); }
-.administrador { --shade: #593217; --accent: #de9957; --photo: url('img/admin.jpg'); }
-.dueno { --shade: #142c49; --accent: #d3af67; --photo: linear-gradient(120deg,#1d4269,#547ca3); }
-.creador { --shade: #332048; --accent: #b194ca; --photo: url('img/base.jpg'); }
+nav a { display: flex; align-items: flex-end; justify-content: space-between; color: white; padding: clamp(1rem,3vw,1.8rem); min-height: clamp(9rem,20vw,13rem); border-radius: 1rem; border-bottom: 5px solid var(--accent); background: linear-gradient(0deg,var(--shade),transparent 160%), var(--photo) center/cover; font-size: clamp(1.5rem,3vw,2.35rem); font-weight: 700; text-decoration: none; }
+nav a::after { content: "↗"; font-weight: 700; }
+nav a:focus-visible { outline: 3px solid #142942; outline-offset: 4px; }
+nav a:hover { box-shadow: 0 5px 16px #1429422e; }
+.trabajador { --shade: #203a57; --accent: #89a9c9; --photo: url('img/productor.jpg'); }
+.administrador { --shade: #203a57; --accent: #89a9c9; --photo: url('img/admin.jpg'); }
+.dueno { --shade: #142942; --accent: #9ab8d4; --photo: linear-gradient(120deg,#29486b,#527fae); }
+.creador { --shade: #142942; --accent: #89a9c9; --photo: url('img/base.jpg'); }
 @media(max-width: 36rem) { nav { grid-template-columns: 1fr; } nav a { min-height: 6.1rem; } }
+
+nav a { font-weight:750; }

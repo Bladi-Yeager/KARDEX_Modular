@@ -77,11 +77,11 @@ class CosechaRepositoryImpl:
         finca = self.db.get(FincaDB, data.finca_id)
         cosechero = self.db.get(CosecheroDB, data.cosechero_id)
         if finca is None or not finca.activo or cosechero is None or not cosechero.activo:
-            raise OperacionKardexError("Selecciona un chaco y un cosechero activos.")
+            raise OperacionKardexError("Selecciona una finca y un cosechero activos.")
         if data.parcela_id is not None:
             parcela = self.db.get(ParcelaDB, data.parcela_id)
             if parcela is None or not parcela.activo or parcela.finca_id != finca.id:
-                raise OperacionKardexError("Selecciona una parcela activa del mismo chaco.")
+                raise OperacionKardexError("Selecciona una parcela activa de la misma finca.")
         producto = self.db.get(ProductoDB, data.producto_id)
         if producto is None:
             raise OperacionKardexError("Selecciona un producto del catálogo.")
@@ -179,16 +179,16 @@ class MovimientoRepositoryImpl:
         filas = self._consulta().filter(ProductoDB.id == id_producto).with_for_update().all()
         if cantidades(row)[1]:
             grupos = [
-                ("almacén", [mov for mov, _, _, _ in filas]),
-                ("chaco", [mov for mov, finca, _, _ in filas if finca == row.finca_id]),
+                ("el almacén", [mov for mov, _, _, _ in filas]),
+                ("la finca", [mov for mov, finca, _, _ in filas if finca == row.finca_id]),
             ]
             if row.lote_id is not None:
-                grupos.append(("lote", [mov for mov, _, _, _ in filas if mov.lote_id == row.lote_id]))
+                grupos.append(("el lote", [mov for mov, _, _, _ in filas if mov.lote_id == row.lote_id]))
             for nombre, grupo in grupos:
                 saldos = acumular_por_producto((mov, id_producto) for mov in grupo)
                 for mov, saldo in zip(grupo, saldos):
                     if (mov.fecha, mov.id) >= (row.fecha, row.id) and saldo < 0:
-                        raise OperacionKardexError(f"La salida deja un saldo negativo de este producto en el {nombre}.", 409)
+                        raise OperacionKardexError(f"La salida deja un saldo negativo de este producto en {nombre}.", 409)
         resultado = None
         saldos = acumular_por_producto((mov, id_producto) for mov, _, _, _ in filas)
         for fila, saldo in zip(filas, saldos):
@@ -208,14 +208,14 @@ class MovimientoRepositoryImpl:
         if lote is None:
             raise OperacionKardexError("El lote indicado no existe.", 404)
         if data.finca_id and lote.finca_id and data.finca_id != lote.finca_id:
-            raise OperacionKardexError("El lote pertenece a otro chaco.")
+            raise OperacionKardexError("El lote pertenece a otra finca.")
         if data.fecha < lote.fecha_ingreso:
             raise OperacionKardexError("La fecha debe ser igual o posterior al ingreso del lote.")
         if lote.cosecha_id and data.cantidad_entrada:
             raise OperacionKardexError("La entrada del lote vinculado se registra al recibir la cosecha.")
         finca = self.db.get(FincaDB, lote.finca_id or data.finca_id) if (lote.finca_id or data.finca_id) else None
         if finca is None or not finca.activo:
-            raise OperacionKardexError("Selecciona un chaco activo para el movimiento.")
+            raise OperacionKardexError("Selecciona una finca activa para el movimiento.")
         producto = self.db.get(ProductoDB, lote.producto_id) if lote.producto_id else None
         if producto and data.unidad_legada and producto.unidad != data.unidad_legada:
             raise OperacionKardexError("Indica la cantidad en la unidad de inventario del producto.")

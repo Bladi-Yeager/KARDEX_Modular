@@ -67,7 +67,7 @@ def aprobar(usuario_id: int, data: Aprobacion, db: Session = Depends(get_db),
         raise HTTPException(409, "La solicitud ya no está pendiente.")
     finca = db.get(FincaDB, data.finca_id, with_for_update=True)
     if finca is None or not finca.activo or finca.usuario_id is not None:
-        raise HTTPException(409, "Selecciona un chaco activo sin asignar.")
+        raise HTTPException(409, "Selecciona una finca activa sin asignar.")
     finca.usuario_id = usuario.id
     usuario.rol = "cliente"
     usuario.activo = True

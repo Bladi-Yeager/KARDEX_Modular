@@ -1,7 +1,9 @@
-from datetime import timedelta
+from datetime import date, timedelta
+from functools import lru_cache
 from src.modules.inventory.bitacora import informe_campo
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from src.core.database import get_db
@@ -9,6 +11,7 @@ from src.core.fechas import hoy_bolivia
 from src.modules.auth.presentation.dependencies import require_roles
 from src.modules.inventory.infrastructure.models_db import LoteDB
 from src.modules.kardex.infrastructure.models_db import CosechaDB, MovimientoDB
+from src.modules.reportes.excel import libro_excel, TIPO_EXCEL
 from src.modules.reportes.finanzas import RegistroFinancieroDB, resultados_lotes
 
 router = APIRouter(prefix="/direccion", tags=["dirección"])
@@ -58,28 +61,94 @@ def periodo(db, inicio, fin, apertura, cierre):
                 actividad=actividad, lotes=filas, conceptos=conceptos)
 
 
-@router.get("/resumen")
-def resumen(dias: int = Query(30, ge=1, le=365), db: Session = Depends(get_db), _actor=Depends(require_roles("jefe"))):
-    hoy = hoy_bolivia()
-    duracion = timedelta(days=dias)
-    ayer = timedelta(days=1)
-    inicio = hoy - duracion + ayer
+DIA = timedelta(days=1)
+solo_dueno = require_roles("jefe")
+
+
+def intervalo(hoy, dias, desde, hasta):
+    if desde is None and hasta is None:
+        return hoy - timedelta(days=dias - 1), hoy
+    if (desde is None or hasta is None or desde < date(1900, 1, 1)
+            or hasta > hoy or desde > hasta or (hasta - desde).days >= 366):
+        raise HTTPException(422, "Elige fechas válidas hasta hoy, con un máximo de 366 días.")
+    return desde, hasta
+
+
+def rangos_mes(hoy):
+    inicio = hoy.replace(day=1)
+    ultimo_previo = inicio - DIA
+    fin_previo = ultimo_previo.replace(day=min(hoy.day, ultimo_previo.day))
+    return inicio, hoy, ultimo_previo.replace(day=1), fin_previo
+
+
+def calculadora(db):
+    @lru_cache(maxsize=8)
     def corte(fecha):
         return {r["lote_id"]: r for r in resultados_lotes(db, fecha)}
-    intermedio = corte(inicio - ayer)
-    cierre = corte(hoy)
-    actual = periodo(db, inicio, hoy, intermedio, cierre)
-    anterior = periodo(db, inicio-duracion, inicio-ayer, corte(inicio-duracion-ayer), intermedio)
+
+    def calcular(inicio, fin):
+        return periodo(db, inicio, fin, corte(inicio - DIA), corte(fin))
+
+    return calcular, corte
+
+
+@router.get("/mensual")
+def mensual(db: Session = Depends(get_db), _actor=Depends(solo_dueno)):
+    inicio, hoy, previo, fin_previo = rangos_mes(hoy_bolivia())
+    calcular, _ = calculadora(db)
+    campos = ("desde", "hasta", "resultado", "ventas", "gastos", "costo", "actividad")
+    def totales(a, b):
+        datos = calcular(a, b)
+        if not datos["actividad"]:
+            datos["resultado"] = 0
+        return {k: datos[k] for k in campos}
+    return {"actual": totales(inicio, hoy), "anterior": totales(previo, fin_previo)}
+
+
+@router.get("/excel-periodo")
+def excel_periodo(desde: date, hasta: date, db: Session = Depends(get_db), _actor=Depends(solo_dueno)):
+    intervalo(hoy_bolivia(), 1, desde, hasta)
+    calcular, _ = calculadora(db)
+    datos = calcular(desde, hasta)
+    columnas = (("desde", "Desde"), ("hasta", "Hasta"), ("codigo", "Lote"), ("producto", "Producto"),
+                ("ventas", "Ventas (Bs)"), ("costo", "Costo de salidas (Bs)"), ("gastos", "Gastos (Bs)"),
+                ("resultado", "Resultado (Bs)"), ("estado", "Estado"))
+    filas = [dict(f, desde=desde, hasta=hasta, estado="Pendiente" if f["resultado"] is None else "Calculado")
+             for f in datos["lotes"]]
+    if datos["generales"]:
+        filas.append(dict(desde=desde, hasta=hasta, codigo="Gastos generales", gastos=datos["generales"],
+                          resultado=-datos["generales"]))
+    filas.append(dict(desde=desde, hasta=hasta, codigo="Total del período", ventas=datos["ventas"],
+                      costo=datos["costo"], gastos=datos["gastos"], resultado=datos["resultado"],
+                      estado="Sin actividad" if not datos["actividad"] else
+                      "Pendiente" if datos["resultado"] is None else "Calculado"))
+    return Response(libro_excel("Resultado por lote", columnas, filas), media_type=TIPO_EXCEL,
+                    headers={"Content-Disposition": f'attachment; filename="Lotes_{desde}_{hasta}.xlsx"'})
+
+
+@router.get("/resumen")
+def resumen(dias: int = Query(30, ge=1, le=365), desde: date | None = None, hasta: date | None = None,
+            db: Session = Depends(get_db), _actor=Depends(solo_dueno)):
+    inicio, fin = intervalo(hoy_bolivia(), dias, desde, hasta)
+    duracion = fin - inicio + DIA
+    calcular, corte = calculadora(db)
+    actual = calcular(inicio, fin)
+    anterior = calcular(inicio - duracion, inicio - DIA)
+    cierre = corte(fin)
     hechos = []
     for l, c in db.query(LoteDB, CosechaDB).join(CosechaDB, LoteDB.cosecha_id==CosechaDB.id).filter(
-            LoteDB.fecha_ingreso.between(inicio,hoy), CosechaDB.rechazada>0):
+            LoteDB.fecha_ingreso.between(inicio,fin), CosechaDB.rechazada>0):
         hechos.append(dict(fecha=l.fecha_ingreso, lote=l.codigo, tipo="Rechazo", cantidad=c.rechazada,
                            unidad=cierre[l.id]["unidad"], motivo=c.motivo_rechazo or "Sin motivo registrado"))
     m = MovimientoDB
-    anulados = db.query(m.anula_movimiento_id).filter(m.anula_movimiento_id.isnot(None), m.fecha <= hoy)
+    anulados = db.query(m.anula_movimiento_id).filter(m.anula_movimiento_id.isnot(None), m.fecha <= fin)
     for mov,l in db.query(m,LoteDB).join(LoteDB,m.lote_id==LoteDB.id).filter(
-            m.fecha.between(inicio,hoy),m.tipo=="merma", ~m.id.in_(anulados)):
+            m.fecha.between(inicio,fin),m.tipo=="merma", ~m.id.in_(anulados)):
         hechos.append(dict(fecha=mov.fecha, lote=l.codigo, tipo="Merma", cantidad=mov.cantidad_salida,
                            unidad=cierre[l.id]["unidad"], motivo=mov.observacion or "Sin motivo registrado"))
-    return dict(campo=informe_campo(db, inicio, hoy), actual=actual, anterior=anterior, hechos=sorted(hechos,key=lambda h:h["fecha"],reverse=True),
+    recepciones = db.query(LoteDB).join(CosechaDB, LoteDB.cosecha_id == CosechaDB.id).filter(
+        LoteDB.fecha_ingreso.between(inicio, fin), CosechaDB.recibida.isnot(None)).count()
+    despachos = db.query(m).filter(m.fecha.between(inicio, fin), m.tipo == "movimiento",
+                                  m.cantidad_salida > 0, ~m.id.in_(anulados)).count()
+    return dict(recepciones=recepciones, despachos=despachos, campo=informe_campo(db, inicio, fin), actual=actual, anterior=anterior, hechos=sorted(hechos,key=lambda h:h["fecha"],reverse=True),
                 pendientes=[dict(codigo=l["codigo"], motivo=l["estado"]) for l in cierre.values() if l["resultado_bs"] is None])
