@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kardex Agrícola · Administración del acopio</title>
-  <link rel="stylesheet" href="/admin/static/styles.css?v=modulos-20261125d">
+  <link rel="stylesheet" href="/admin/static/styles.css?v=navegacion-20261125e">
   <link rel="stylesheet" href="/inicio/static/acopio.css?v=roles-20261125b">
   <script defer src="/inicio/static/acopio.js?v=finca1"></script>
-  <script defer src="/admin/static/app.js?v=2026.11.25.5"></script>
+  <script defer src="/admin/static/app.js?v=2026.11.25.6"></script>
 </head>
 <body>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -41,7 +41,14 @@
 
   <div id="app-shell" class="app-shell hidden">
     <aside class="sidebar" id="sidebar">
-      <a href="/" class="brand brand-light"><span class="brand-mark" aria-hidden="true">K</span>Kardex Agrícola</a>
+      <a href="/" class="brand brand-light">
+        <svg class="sidebar-emblem" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+          <rect width="48" height="48" rx="10" fill="#fff3eb"/>
+          <path d="M7 6h10v13L29 6h12L27 21Q16 21 7 32Z" fill="#54103e"/>
+          <path d="M6 40q9-16 22-18l2 2Q19 27 12 40zm9 0q6-11 17-14l2 3q-8 3-13 11zm10 0q4-7 11-9l6 9z" fill="#b96506"/>
+        </svg>
+        <span>Kardex de Cosechas</span>
+      </a>
       <nav id="side-nav" aria-label="Administración del acopio"></nav>
       <div class="sidebar-bottom">
         <div class="profile-mini">
@@ -53,7 +60,7 @@
     </aside>
     <main class="main-area">
       <header class="topbar">
-        <button id="menu-toggle" class="icon-btn mobile-only" aria-label="Abrir menú" type="button">☰</button>
+        <button id="menu-toggle" aria-controls="sidebar" aria-expanded="false" class="icon-btn mobile-only" aria-label="Abrir menú" type="button">☰</button>
         <div>
           <div class="breadcrumb">Kardex Agrícola <span>/</span> <b id="page-crumb">Resumen</b></div>
           <div class="top-date" id="today-label"></div>

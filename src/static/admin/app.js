@@ -4,20 +4,25 @@ const TOKEN_KEY = "kardex_admin_token";
 const THEME_KEY = "kardex_admin_theme";
 const ROLE_LABEL = { admin: "Administrador operativo", jefe: "Jefe de empresa", soporte: "Soporte técnico" };
 const PAGES = {
-  dashboard: ["▦", "Resumen"],
-  harvests: ["♧", "Cosechas"],
-  lots: ["▤", "Lotes"],
-  movements: ["⇄", "Kardex"],
-  products: ["◫", "Productos y unidades"],
-  finance: ["▥", "Ventas y costos"],
-  journal: ["▤", "Bitácora por parcela"],
-  farms: ["⌂", "Fincas y parcelas"],
-  workers: ["♙", "Cosecheros"],
-  clients: ["◈", "Afiliaciones"],
-  users: ["◍", "Cuentas"]
+  dashboard: ["M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z", "Resumen"],
+  harvests: ["M4 20 18 6 M8 16C3 12 5 6 10 4c0 4 2 6 0 9 M11 13c-1-5 3-9 9-10 0 6-2 12-9 10", "Cosechas"],
+  lots: ["m3 7 9-4 9 4-9 5z M3 7v10l9 4 9-4V7 M12 12v9", "Lotes"],
+  movements: ["M3 7h17m-5-4 5 4-5 4 M21 17H4m5-4-5 4 5 4", "Kardex"],
+  products: ["M3 4h7v7H3z M14 4h7v7h-7z M3 15h18 M3 20h18", "Productos y unidades"],
+  finance: ["M3 20h18 M5 16v-5h3v5z M11 16V7h3v9z M17 16V3h3v13z", "Ventas y costos"],
+  journal: ["M5 4h14v17H5z M8 2v4 M16 2v4 M8 10h8 M8 14h6", "Bitácora por parcela"],
+  farms: ["M3 11 12 4l9 7 M5 10v10h14V10 M10 20v-6h4v6", "Fincas y parcelas"],
+  workers: ["M8 8a4 4 0 1 0 8 0 4 4 0 1 0-8 0 M4 20c0-4 4-6 8-6s8 2 8 6", "Cosecheros"],
+  clients: ["M3 8h18v12H3z M8 8V5h8v3 M7 13h4 M7 16h8", "Afiliaciones"],
+  users: ["M3 4h18v16H3z M7 9a2 2 0 1 0 4 0 2 2 0 1 0-4 0 M6 16q3-4 6 0 M15 9h3 M15 13h3", "Cuentas"]
 };
 const NAV = {
-  admin: ["dashboard", "harvests", "journal", "lots", "movements", "products", "finance", "farms", "workers", "clients", "users"],
+  admin: [
+    ["Principal", ["dashboard"]],
+    ["Operaciones de campo", ["harvests", "journal", "farms"]],
+    ["Inventario y ventas", ["lots", "movements", "products", "finance"]],
+    ["Administración", ["workers", "clients", "users"]]
+  ],
 };
 
 let session;
@@ -116,6 +121,7 @@ async function actualizarAviso() {
 setInterval(() => { if (!document.hidden && session?.rol === "admin") actualizarAviso(); }, 30000);
 
 function showApp() {
+  renderMenu(NAV[session.rol]);
   $("#auth-screen").classList.add("hidden");
   $("#app-shell").classList.remove("hidden");
   $("#side-user").textContent = session.nombre_completo;
@@ -154,19 +160,42 @@ function dependencies(page) {
   }
 }
 
+function setMenuOpen(open) {
+  const sidebar = $("#sidebar");
+  const wasOpen = sidebar.classList.contains("open");
+  sidebar.classList.toggle("open", open);
+  const toggle = $("#menu-toggle");
+  toggle.setAttribute("aria-expanded", String(open));
+  toggle.setAttribute("aria-label", open ? "Cerrar menú" : "Abrir menú");
+  if (open) $("#side-nav [aria-current='page']")?.focus();
+  else if (wasOpen && getComputedStyle(toggle).display !== "none") toggle.focus();
+}
+
+function renderMenu(groups) {
+  $("#side-nav").innerHTML = groups.map(([title, pages], index) => {
+    const buttons = pages.map(key => {
+      const [path, label] = PAGES[key];
+      return `<button type="button" class="nav-item" data-page="${key}"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="${path}"/></svg>${label}</button>`;
+    }).join("");
+    return `<section class="nav-group" aria-labelledby="nav-group-${index}"><h2 class="nav-heading" id="nav-group-${index}">${title}</h2>${buttons}</section>`;
+  }).join("");
+}
+
 async function navigate(page) {
   if (!session) return;
-  if (!NAV[session.rol].includes(page)) page = "dashboard";
+  if (!NAV[session.rol].some(([, pages]) => pages.includes(page))) page = "dashboard";
   currentPage = page;
   actualizarAviso();
   const id = ++requestId;
   history.replaceState(null, "", "#" + page);
-  $("#sidebar").classList.remove("open");
-  $("#page-crumb").textContent = page === "dashboard" && session.rol === "soporte" ? "Diagnóstico" : PAGES[page][1];
-  $("#side-nav").innerHTML = NAV[session.rol].map((key) => {
-    const [icon, label] = PAGES[key];
-    return `<button class="nav-item ${page === key ? "active" : ""}" type="button" data-page="${key}" ${page === key ? 'aria-current="page"' : ""}><span class="nav-ico" aria-hidden="true">${icon}</span>${key === "dashboard" && session.rol === "soporte" ? "Diagnóstico" : label}</button>`;
-  }).join("");
+  setMenuOpen(false);
+  $("#page-crumb").textContent = PAGES[page][1];
+  for (const item of $$("#side-nav .nav-item")) {
+    const selected = item.dataset.page === page;
+    item.classList.toggle("active", selected);
+    if (selected) item.setAttribute("aria-current", "page");
+    else item.removeAttribute("aria-current");
+  }
   $("#page-content").innerHTML = '<p class="loading" role="status">Cargando información…</p>';
   try {
     const pairs = await Promise.all(dependencies(page).map(async (key) => {
@@ -791,8 +820,14 @@ $("#app-shell").addEventListener("click", (event) => {
     { method: "PATCH", body: JSON.stringify({ activo: d.nextState === "true" }) });
 });
 $("#theme-toggle").addEventListener("click", () => applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $("#sidebar").classList.contains("open")) setMenuOpen(false);
+});
 $("#logout-btn").addEventListener("click", logout);
-$("#menu-toggle").addEventListener("click", () => $("#sidebar").classList.toggle("open"));
+$("#menu-toggle").addEventListener("click", () => setMenuOpen(!$("#sidebar").classList.contains("open")));
+document.addEventListener("pointerdown", e => {
+  if ($("#sidebar").classList.contains("open") && !e.target.closest("#sidebar, #menu-toggle")) setMenuOpen(false);
+});
 $("#login-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
