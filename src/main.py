@@ -86,7 +86,7 @@ def portal_panel():
 @app.get("/admin", include_in_schema=False)
 def admin_panel():
     """Panel completo de administracion, encargados y trabajadores."""
-    return FileResponse(STATIC_DIR / "admin" / "index.html")
+    return FileResponse(STATIC_DIR / "admin" / "index.html", headers={"Cache-Control": "no-store, max-age=0"})
 
 
 @app.get("/health", tags=["sistema"])
