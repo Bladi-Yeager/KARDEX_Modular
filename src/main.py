@@ -102,3 +102,9 @@ def panel_jefe():
 @app.get("/soporte", include_in_schema=False)
 def panel_soporte():
     return RedirectResponse("https://wa.me/59167559408", status_code=307)
+
+
+@app.get("/creador", include_in_schema=False)
+def acceso_creador():
+    """phpMyAdmin autentica al creador con su cuenta de MySQL en el servidor local."""
+    return RedirectResponse("http://127.0.0.1:8080/", status_code=307)

@@ -18,7 +18,6 @@ const PAGES = {
 };
 const NAV = {
   admin: ["dashboard", "harvests", "journal", "lots", "movements", "products", "finance", "farms", "workers", "clients", "users"],
-  soporte: ["dashboard"],
 };
 
 let session;
@@ -785,19 +784,8 @@ $("#login-form").addEventListener("submit", async (event) => {
   submitButton.disabled = true;
   try {
     const data = await api("/auth/login", { method: "POST", body: JSON.stringify(payload(form)) });
-    if (data.usuario.rol === "cliente") {
-      localStorage.setItem("kardex_token", data.access_token);
-      localStorage.setItem("kardex_usuario", JSON.stringify(data.usuario));
-      location.assign("/portal/panel");
-      return;
-    }
-    if (data.usuario.rol === "jefe") {
-      sessionStorage.setItem("consulta_token", data.access_token);
-      location.replace("/" + data.usuario.rol);
-      return;
-    }
-    if (!NAV[data.usuario.rol]) {
-      toast("Entra con esa cuenta desde el portal del productor.", true);
+    if (data.usuario.rol !== "admin") {
+      toast("Este acceso requiere una cuenta de administrador.", true);
       return;
     }
     session = data.usuario;
@@ -816,13 +804,7 @@ $("#login-form").addEventListener("submit", async (event) => {
   if (!token) return;
   try {
     session = await api("/auth/me");
-    if (session.rol === "jefe") {
-      sessionStorage.setItem("consulta_token", token);
-      localStorage.removeItem(TOKEN_KEY);
-      location.replace("/" + session.rol);
-      return;
-    }
-    if (NAV[session.rol]) showApp();
+    if (session.rol === "admin") showApp();
     else logout();
   } catch { logout(); }
 })();

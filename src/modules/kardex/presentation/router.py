@@ -10,7 +10,7 @@ from src.modules.kardex.application.services import CosechaService, MovimientoSe
 from src.modules.kardex.infrastructure.repository_impl import CosechaRepositoryImpl, MovimientoRepositoryImpl
 
 router = APIRouter(prefix="/kardex", tags=["kardex"])
-puede_leer = require_roles("admin", "jefe")
+puede_leer = require_roles("admin")
 puede_escribir = require_roles("admin")
 
 

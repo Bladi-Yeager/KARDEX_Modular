@@ -132,7 +132,7 @@ def por_lote(hasta: date | None = None, finca_id: int | None = None,
 
 
 @router.get("", response_model=list[RegistroOut])
-def listar(db: Session = Depends(get_db), _actor=Depends(require_roles("jefe", "admin"))):
+def listar(db: Session = Depends(get_db), _actor=Depends(require_roles("admin"))):
     return registros(db).all()
 
 

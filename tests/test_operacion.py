@@ -97,7 +97,7 @@ class OperacionTest(unittest.IsolatedAsyncioTestCase):
             await enviar("/portal/api/admin/asignar-finca", admin, {"finca_id": finca["id"], "usuario_id": productor["id"]}, 200)
             fincas.append(finca["id"])
         cosechero = await enviar("/cosecheros", admin, {"nombre": "Cosechero de prueba"}, 200)
-        catalogo = {(p["nombre"], p["unidad"]): p["id"] for p in (await leer("/inventario/productos", jefe)).json()}
+        catalogo = {(p["nombre"], p["unidad"]): p["id"] for p in (await leer("/inventario/productos", admin)).json()}
         pitahaya = catalogo["Pitahaya", "kg"]
         pina = catalogo["Piña", "unidad"]
         banano = catalogo["Banano", "caja"]
@@ -119,7 +119,7 @@ class OperacionTest(unittest.IsolatedAsyncioTestCase):
         await enviar(f"/kardex/cosechas/{segunda['id']}/recepcion", admin, {"codigo": "REP", "fecha": fecha.isoformat()}, 409)
         resumen_b = (await leer("/portal/api/resumen", pb)).json()
         self.assertEqual((resumen_b["entradas_kg"], resumen_b["saldo_kg"]), (25, 25))
-        self.assertEqual((await leer("/kardex/movimientos", jefe)).json()[-1]["saldo_kg"], 125)
+        self.assertEqual((await leer("/kardex/movimientos", admin)).json()[-1]["saldo_kg"], 125)
         lote_b = (await leer("/portal/api/mis-lotes", pb)).json()[0]["id"]
         salida = {"fecha": fecha.isoformat(), "detalle": "Despacho de prueba", "lote_id": lote_b, "salida_kg": 10}
         await enviar("/kardex/movimientos", admin, dict(salida, salida_kg=26), 409)
@@ -138,7 +138,7 @@ class OperacionTest(unittest.IsolatedAsyncioTestCase):
         self.assertIn("PR-025", contenido[1])
         self.assertNotIn("PR-100", contenido[1])
         self.assertIn(25, contenido[1])
-        historial = await leer(f"/kardex/movimientos?lote_id={lote_b}", jefe)
+        historial = await leer(f"/kardex/movimientos?lote_id={lote_b}", admin)
         self.assertEqual([m["saldo_kg"] for m in historial.json()], [25, 15, 25])
 
         # Dos despachos simultáneos no pueden comprometer la misma existencia.
@@ -153,9 +153,10 @@ class OperacionTest(unittest.IsolatedAsyncioTestCase):
             data = {"fecha": fecha.isoformat(), "tipo": tipo, "concepto": "=Dato escrito", "lote_id": lote_b, "monto_bs": monto}
             await enviar("/finanzas", admin, data)
             await enviar("/finanzas", jefe, data, 403)
-        resultado = (await leer("/reportes/resumen", jefe)).json()["finanzas"]
-        self.assertEqual(float(resultado["resultado_bs"]), 40)
-        xlsx = await leer("/reportes/excel/finanzas", jefe)
+        for ruta in ("/reportes/resumen", "/inventario/productos", "/kardex/movimientos",
+                     "/finanzas", "/auth/usuarios", "/reportes/excel/finanzas", "/reportes/excel/cuentas"):
+            await leer(ruta, jefe, 403)
+        xlsx = await leer("/reportes/excel/finanzas", admin)
         celda = load_workbook(BytesIO(xlsx.content), data_only=False).active["C2"]
         self.assertEqual(celda.value, "=Dato escrito")
         self.assertEqual(celda.data_type, "s")
@@ -182,7 +183,7 @@ class OperacionTest(unittest.IsolatedAsyncioTestCase):
         self.assertIn(58, next(fila for fila in filas if "PR-025" in fila))
         # Un corte anterior al ingreso conserva el saldo real de ese período.
         corte = (fecha - timedelta(days=1)).isoformat()
-        reporte = (await leer("/reportes/resumen?fecha_hasta=" + corte, jefe)).json()
+        reporte = (await leer("/reportes/resumen?fecha_hasta=" + corte, admin)).json()
         self.assertEqual(reporte["existencia_kg"], 0)
 
         await preparar(fincas[0], "2.5", pina, 422)
@@ -217,7 +218,7 @@ class OperacionTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(total["aceptada"], 0)
         self.assertIsNone(total["movimiento"])
 
-        reporte = await leer(f"/reportes/resumen?fecha_desde={fecha}&fecha_hasta={fecha}", jefe)
+        reporte = await leer(f"/reportes/resumen?fecha_desde={fecha}&fecha_hasta={fecha}", admin)
         grupos = {p["producto_id"]: p for p in reporte.json()["existencias"]}
         self.assertEqual({p: (g["unidad"], float(g["saldo"])) for p, g in grupos.items()},
                          {pina: ("unidad", 89), banano: ("caja", 12), pitahaya: ("kg", 109)})
@@ -231,7 +232,7 @@ class OperacionTest(unittest.IsolatedAsyncioTestCase):
         recibo = next(c for c in comprobantes.json() if c["producto_id"] == pina)
         self.assertEqual((recibo["codigo_lote"], recibo["recibida"], recibo["cantidad_secundaria"]), ("PIN-001", 100, 110.5))
         self.assertEqual(recibo["monto_bs"], 184)
-        archivo = await leer(f"/reportes/excel/existencias?producto_id={pina}&fecha_desde={fecha}&fecha_hasta={fecha}", jefe)
+        archivo = await leer(f"/reportes/excel/existencias?producto_id={pina}&fecha_desde={fecha}&fecha_hasta={fecha}", admin)
         filas = list(load_workbook(BytesIO(archivo.content)).active.values)
         self.assertEqual(len(filas), 2)
         self.assertEqual(filas[1][2:4], ("Piña", "unidad"))
@@ -240,9 +241,9 @@ class OperacionTest(unittest.IsolatedAsyncioTestCase):
         with SessionLocal.begin() as db:
             db.add(MovimientoDB(finca_id=fincas[0], fecha=fecha, detalle="Ingreso histórico",
                                 entrada_kg=7, saldo_kg=999))
-        historia = await leer("/kardex/movimientos?producto_id=0", jefe)
+        historia = await leer("/kardex/movimientos?producto_id=0", admin)
         self.assertEqual([(m["producto"], m["cantidad_saldo"]) for m in historia.json()], [("Histórico sin clasificar", 7)])
-        modernas = await leer(f"/kardex/movimientos?producto_id={pina}", jefe)
+        modernas = await leer(f"/kardex/movimientos?producto_id={pina}", admin)
         self.assertEqual(modernas.json()[-1]["cantidad_saldo"], 89)
 
 

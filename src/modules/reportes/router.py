@@ -19,11 +19,11 @@ from src.modules.kardex.domain.saldos import resumen_por_producto
 from src.modules.portal.application.services import PortalService
 from src.modules.portal.infrastructure.repository_impl import PortalRepositoryImpl
 from src.modules.reportes.excel import TIPO_EXCEL, libro_excel
-from src.modules.reportes.finanzas import registros, resultado_registrado, resultados_lotes
+from src.modules.reportes.finanzas import registros, resultados_lotes
 from src.modules.supliers.infrastructure.repository_impl import CosecheroRepositoryImpl
 
 router = APIRouter(prefix="/reportes", tags=["reportes"])
-empresa = require_roles("jefe", "admin")
+operador = require_roles("admin")
 
 FINCAS = (("numero", "Número"), ("nombre", "Finca o chaco"), ("ubicacion", "Ubicación"))
 COSECHAS = (("fecha", "Fecha de cosecha"), ("fecha_recepcion", "Fecha de recepción"), ("finca", "Finca o chaco"),
@@ -134,20 +134,20 @@ def _datos_excel(db, actor, tabla, finca_id, lote_id, confirmadas):
         return _datos_productor(db, actor, tabla)
     if actor.rol == "soporte" and tabla == "diagnostico":
         return ESTADO, _diagnostico(db)
-    if actor.rol in ("jefe", "admin"):
+    if actor.rol == "admin":
         if tabla == "productos":
             columnas = (("producto", "Producto"), ("unidad", "Unidad de inventario"))
             filas = db.query(ProductoDB).order_by(ProductoDB.nombre, ProductoDB.unidad).all()
             return columnas, [{"producto": p.nombre, "unidad": p.unidad} for p in filas]
         if tabla in ("fincas", "parcelas", "lotes", "kardex", "cosechas"):
-            return _datos_empresa(db, tabla, finca_id, lote_id, confirmadas or actor.rol == "jefe")
+            return _datos_empresa(db, tabla, finca_id, lote_id, confirmadas)
         if tabla == "bitacora":
             columnas = (("fecha","Fecha"),("parcela","Parcela"),("tipo","Actividad"),("detalle","Descripción"),
                         ("insumo","Abono"),("dosis","Dosis"),("unidad_dosis","Unidad de dosis"),("lote","Lote"),
                         ("area_ha","Superficie cosechada (ha)"),("aceptada","Aceptada"),("unidad","Unidad"))
             return columnas, registros_campo(db)
         if tabla == "cuentas":
-            rol = "admin" if actor.rol == "jefe" else "cliente"
+            rol = "cliente"
             return CUENTAS, [dict(vars(u), rol=rol) for u in UsuarioRepositoryImpl(db).list_all()
                              if rol_efectivo(u.rol) == rol]
         if tabla == "finanzas":
@@ -190,7 +190,7 @@ def descargar_excel(tabla: str, fecha_desde: date | None = None, fecha_hasta: da
                     ("saldo", "Existencias"), ("ventas_bs", "Ventas (Bs)"), ("compra_bs", "Compra total (Bs)"),
                     ("costo_salidas_bs", "Costo de salidas y mermas (Bs)"), ("gastos_bs", "Otros gastos (Bs)"),
                     ("resultado_bs", "Resultado registrado (Bs)"), ("estado", "Estado"))
-    elif tabla == "existencias" and actor.rol in ("jefe", "admin"):
+    elif tabla == "existencias" and actor.rol == "admin":
         reporte = _resumen(db, fecha_desde, fecha_hasta, finca_id)
         columnas = EXISTENCIAS
         filas = [dict(fila, desde=reporte["desde"], hasta=reporte["hasta"]) for fila in reporte["existencias"]]
@@ -205,11 +205,8 @@ def descargar_excel(tabla: str, fecha_desde: date | None = None, fecha_hasta: da
 
 @router.get("/resumen")
 def resumen(fecha_desde: date | None = None, fecha_hasta: date | None = None,
-            finca_id: int | None = Query(None, gt=0), db: Session = Depends(get_db), _actor=Depends(empresa)):
-    reporte = _resumen(db, fecha_desde, fecha_hasta, finca_id)
-    if _actor.rol == "jefe":
-        reporte["finanzas"] = resultado_registrado(db, reporte["desde"], reporte["hasta"], finca_id)
-    return reporte
+            finca_id: int | None = Query(None, gt=0), db: Session = Depends(get_db), _actor=Depends(operador)):
+    return _resumen(db, fecha_desde, fecha_hasta, finca_id)
 
 
 def _resumen(db, fecha_desde, fecha_hasta, finca_id):

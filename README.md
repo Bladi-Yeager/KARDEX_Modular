@@ -17,13 +17,12 @@ El sistema usa FastAPI, SQLAlchemy, MySQL y Docker Compose.
    ```sh
    docker compose exec web python -m src.core.provision admin operador "Nombre del administrador"
    docker compose exec web python -m src.core.provision jefe direccion "Nombre del jefe"
-   docker compose exec web python -m src.core.provision soporte soporte_local "Nombre de soporte"
    ```
 
    El comando solicita la contraseña de forma interactiva. Los administradores operativos se provisionan desde esta terminal. Las cuentas existentes de admin o
    encargado se reconocen como administradores operativos. Las cuentas históricas de trabajador acceden al portal de solo lectura con sus credenciales y ven únicamente sus fincas asignadas.
 4. Abre `http://localhost:8001`. El panel interno está en `/admin` y el portal
-   de productores en `/portal`. Dirección usa `/jefe` y soporte técnico `/soporte`.
+   de productores en `/portal`. El dueño usa `/jefe`. En el equipo servidor, `/creador` abre phpMyAdmin. El trabajador tiene ayuda por WhatsApp dentro del portal.
 
 Para una base vacía de demostración puedes activar `DEMO_DATA=true`.
 El diagnóstico con phpMyAdmin es opcional y local. Para habilitarlo ejecuta
@@ -37,10 +36,10 @@ Desde el portal, el productor elige su contraseña y solicita acceso. El adminis
 
 | Perfil | Operaciones |
 | --- | --- |
-| Soporte técnico | Ver el estado de los servicios y descargar su diagnóstico. |
+| Creador | Acceder localmente a phpMyAdmin con sus credenciales de MySQL. |
 | Jefe | Consultar el resultado financiero exclusivo por lote y período, además de producción y existencias. Comparar períodos y consultar incidencias. Acceso de solo lectura en /jefe. |
 | Administrador operativo | Registrar fincas, parcelas, cosechas, lotes, movimientos, ventas y costos. Gestionar productores y afiliaciones. |
-| Productor afiliado | Consultar y descargar los registros de sus fincas asignadas. |
+| Trabajador o productor afiliado | Consultar y descargar los registros de sus fincas asignadas. |
 
 Los registros de finca se muestran a la cuenta asociada actualmente. Revisa la
 asignación antes de transferir una finca, porque la cuenta que recibe la

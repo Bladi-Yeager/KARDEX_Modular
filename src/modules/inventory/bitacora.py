@@ -91,7 +91,7 @@ def registros(db, desde=None, hasta=None):
 
 
 @router.get("")
-def historial(db: Session = Depends(get_db), _actor=Depends(require_roles("admin", "jefe"))):
+def historial(db: Session = Depends(get_db), _actor=Depends(require_roles("admin"))):
     return registros(db)
 
 

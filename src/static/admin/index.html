@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Kardex Agrícola · Panel interno</title>
-  <link rel="stylesheet" href="/admin/static/styles.css?v=2026.11.25.1">
+  <title>Kardex Agrícola · Administración del acopio</title>
+  <link rel="stylesheet" href="/admin/static/styles.css?v=2026.11.25.2">
   <link rel="stylesheet" href="/inicio/static/acopio.css">
   <script defer src="/inicio/static/acopio.js"></script>
-  <script defer src="/admin/static/app.js?v=2026.11.25.1"></script>
+  <script defer src="/admin/static/app.js?v=2026.11.25.2"></script>
 </head>
 <body>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -27,14 +27,14 @@
     <div class="auth-panel">
       <div class="auth-mobile-brand brand"><span class="brand-mark" aria-hidden="true">K</span>Kardex Agrícola</div>
       <section class="auth-card">
-        <h2>Panel interno</h2>
-        <p class="muted">Ingresa con tu cuenta de administrador operativo o soporte técnico.</p>
+        <h2>Administración del acopio</h2>
+        <p class="muted">Registra cosechas, movimientos y ventas. Gestiona las cuentas del acopio.</p>
         <form id="login-form" class="form-stack">
           <label>Usuario<input name="username" autocomplete="username" required></label>
           <label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
           <button class="btn btn-primary btn-full" type="submit">Iniciar sesión</button>
         </form>
-        <p class="auth-help">¿Eres productor? <a href="/portal">Entra al portal del productor</a>.</p>
+        <p class="auth-help"><a href="/">Volver al centro de accesos</a></p>
       </section>
     </div>
   </section>
@@ -43,7 +43,7 @@
     <aside class="sidebar" id="sidebar">
       <a href="/" class="brand brand-light"><span class="brand-mark" aria-hidden="true">K</span>Kardex Agrícola</a>
       <button hidden type="button" class="btn btn-soft" id="aviso-solicitudes" data-page="clients" aria-live="polite"></button>
-      <nav id="side-nav" aria-label="Panel interno"></nav>
+      <nav id="side-nav" aria-label="Administración del acopio"></nav>
       <div class="sidebar-bottom">
         <div class="profile-mini">
           <div class="avatar" id="user-avatar" aria-hidden="true"></div>

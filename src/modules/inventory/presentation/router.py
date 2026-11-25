@@ -21,7 +21,7 @@ from src.modules.inventory.infrastructure.models_db import ProductoDB
 
 router = APIRouter(prefix="/inventario", tags=["inventario"])
 
-puede_leer = require_roles("admin", "jefe")
+puede_leer = require_roles("admin")
 puede_escribir = require_roles("admin")
 
 

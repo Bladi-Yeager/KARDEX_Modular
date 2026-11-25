@@ -730,3 +730,11 @@ h1, h2, h3 { margin: 0; font-weight: 700; color: var(--texto); }
 
 .soporte-portal { padding: 1rem; text-align: center; }
 .soporte-portal a { color: inherit; text-decoration: underline; }
+
+.auth-shell .brand {
+  background: linear-gradient(155deg, #123f35ec, #224831c7 62%, #62401edb), url('/inicio/static/img/productor.jpg') center/cover;
+  color: white;
+}
+.bienvenida { border-inline-start: 5px solid #cd8636; padding-inline-start: 1rem; }
+.soporte-portal a { display: inline-flex; align-items: center; min-height: 44px; padding: .6rem 1.1rem; border-radius: 8px; background: #166546; color: white; font-weight: 650; text-decoration: none; }
+.soporte-portal a:hover { background: #104b35; }

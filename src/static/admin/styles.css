@@ -511,3 +511,9 @@ button.metric:hover{border-color:var(--metric);transform:translateY(-2px)}
 #aviso-solicitudes[hidden] { display: none; }
 
 #journal-form .field[hidden]{display:none}
+
+.auth-layout .auth-visual {
+  background: linear-gradient(145deg, #122f51de, #234565a8 62%, #634027d9), url('/inicio/static/img/admin.jpg') center/cover;
+}
+.sidebar .brand { color: #fff; }
+.sidebar .nav-item.active { border-inline-start: 3px solid #ffbe6b; }
